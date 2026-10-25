@@ -1,0 +1,12 @@
+/vendor
+/node_modules
+/tests
+/storage/logs
+/storage/framework
+/database/*.sqlite
+.env
+.env.*
+!.env.example
+!.env.vercel.example
+CLAUDE.md
+AGENTS.md
