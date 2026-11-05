@@ -3,6 +3,13 @@
 @section('title', 'Pemesanan — Naro Capture')
 
 @section('content')
+@php
+    $selPkg = collect($packages)->firstWhere('id', $selectedPackageId) ?? ($packages[0] ?? []);
+    $selDur = (int) ($selPkg['duration'] ?? 60);
+    $selStart = [15, 30];
+    $selEndMin = $selStart[0] * 60 + $selStart[1] + $selDur;
+    $selEnd = sprintf('%02d.%02d', intdiv($selEndMin, 60) % 24, $selEndMin % 60);
+@endphp
 <main class="booking-page">
     {{-- Breadcrumb & Header --}}
     <section class="booking-hero">
@@ -62,9 +69,12 @@
                                     </li>
                                 @endforeach
                             </ul>
+                            @if (!empty($pkg['note']))
+                                <p class="pkg-card__note">{{ $pkg['note'] }}</p>
+                            @endif
                             <div class="pkg-card__footer">
-                                @if ($pkg['id'] === 'cerita-keluarga')
-                                    <span class="pkg-tag">PAKET TERPILIH · PILIHAN TERPOPULER</span>
+                                @if ($selectedPackageId === $pkg['id'])
+                                    <span class="pkg-tag">PAKET TERPILIH</span>
                                 @else
                                     <span class="pkg-tag-muted">KLIK UNTUK MEMILIH</span>
                                 @endif
@@ -193,7 +203,7 @@
                                 <span class="slot-status">Dipilih</span>
                             </label>
                         </div>
-                        <p class="time-duration-note" id="timeDurationNote">Durasi Cerita Keluarga: 90 menit · 15.30–17.00 WIB</p>
+                        <p class="time-duration-note" id="timeDurationNote">Durasi {{ $selPkg['name'] ?? '' }}: {{ $selDur }} menit · 15.30–{{ $selEnd }} WIB</p>
                     </div>
                 </div>
 
@@ -205,7 +215,7 @@
                         <img src="{{ asset('images/icon-camera.svg') }}" alt="" class="summary-icon">
                         <div class="summary-item__text">
                             <span class="summary-label">Paket pilihan</span>
-                            <strong class="summary-val" id="sumPackageName">Cerita Keluarga</strong>
+                            <strong class="summary-val" id="sumPackageName">{{ $selPkg['name'] ?? '' }}</strong>
                         </div>
                     </div>
 
@@ -221,7 +231,7 @@
                         <img src="{{ asset('images/icon-clock.svg') }}" alt="" class="summary-icon">
                         <div class="summary-item__text">
                             <span class="summary-label">Waktu sesi</span>
-                            <strong class="summary-val" id="sumTime">15.30–17.00 WIB · 90 menit</strong>
+                            <strong class="summary-val" id="sumTime">15.30–{{ $selEnd }} WIB · {{ $selDur }} menit</strong>
                         </div>
                     </div>
 
@@ -229,7 +239,7 @@
 
                     <div class="summary-price-row">
                         <span class="summary-price-label">Harga paket / sesi</span>
-                        <span class="summary-price-val" id="sumPrice">Rp9.500.000</span>
+                        <span class="summary-price-val" id="sumPrice">{{ $selPkg['price'] ?? '' }}</span>
                     </div>
 
                     <div class="summary-notice">
@@ -283,7 +293,7 @@
                         <div class="form-group">
                             <label for="paket_display" class="form-label">Paket pilihan *</label>
                             <div class="custom-select-mimic">
-                                <span id="formSelectedPkgLabel">Cerita Keluarga · Rp9.500.000 / sesi</span>
+                                <span id="formSelectedPkgLabel">{{ $selPkg['name'] ?? '' }} · {{ $selPkg['price'] ?? '' }} / sesi</span>
                                 <img src="{{ asset('images/chevron-down.svg') }}" alt="" class="select-chevron">
                             </div>
                             <p class="form-helper-text">Sesuai dengan paket yang Anda pilih di atas.</p>
@@ -292,7 +302,7 @@
                         <div class="form-group">
                             <label for="lokasi" class="form-label">Lokasi sesi *</label>
                             <input type="text" id="lokasi" name="lokasi" class="form-control" placeholder="Contoh: Rumah / Cafe / Studio di Jakarta Selatan" value="{{ old('lokasi') }}" required>
-                            <p class="form-helper-text" id="lokasiHelper">Cerita Keluarga mencakup dua lokasi. Alamat dan lokasi akhir dibahas saat perencanaan.</p>
+                            <p class="form-helper-text" id="lokasiHelper">{{ $selPkg['location_note'] ?? '' }}</p>
                         </div>
 
                         <div class="form-group">
@@ -342,11 +352,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const timeDurationNote = document.getElementById('timeDurationNote');
     const timeDateDisplay = document.getElementById('timeDateDisplay');
 
+    // Nilai awal diambil dari paket yang sedang terpilih (dirender server)
+    const initCard = document.querySelector('.package-card-select.is-selected') || packageCards[0];
     let currentPkg = {
-        name: 'Cerita Keluarga',
-        price: 'Rp9.500.000',
-        duration: 90,
-        location: 'Cerita Keluarga mencakup dua lokasi. Alamat dan lokasi akhir dibahas saat perencanaan.'
+        name: initCard ? initCard.dataset.name : '',
+        price: initCard ? initCard.dataset.price : '',
+        duration: initCard ? parseInt(initCard.dataset.duration || 60) : 60,
+        location: initCard ? initCard.dataset.location : ''
     };
     let currentDateLabel = 'Sabtu, 17 Oktober 2026';
     let currentTimeSlot = '15.30';
@@ -359,14 +371,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (sumDate) sumDate.textContent = currentDateLabel;
         if (timeDateDisplay) timeDateDisplay.textContent = currentDateLabel;
         
-        let endTime = '';
-        if (currentTimeSlot === '09.00') {
-            endTime = currentPkg.duration === 90 ? '10.30' : (currentPkg.duration === 45 ? '09.45' : '13.00');
-        } else if (currentTimeSlot === '15.30') {
-            endTime = currentPkg.duration === 90 ? '17.00' : (currentPkg.duration === 45 ? '16.15' : '19.30');
-        } else {
-            endTime = '14.30';
-        }
+        // Jam selesai = jam mulai + durasi paket
+        const [startH, startM] = currentTimeSlot.split('.').map(n => parseInt(n, 10));
+        const endTotal = startH * 60 + startM + currentPkg.duration;
+        const endTime = String(Math.floor(endTotal / 60) % 24).padStart(2, '0') + '.' + String(endTotal % 60).padStart(2, '0');
 
         const timeStr = `${currentTimeSlot}–${endTime} WIB · ${currentPkg.duration} menit`;
         if (sumTime) sumTime.textContent = timeStr;

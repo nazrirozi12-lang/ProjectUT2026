@@ -95,7 +95,7 @@
                 <hr class="divider">
                 <div class="admin-profile-meta">
                     <strong class="admin-profile-name">{{ Auth::check() ? Auth::user()->name : 'NC · Naro Capture' }}</strong>
-                    <span class="admin-profile-role">{{ Auth::check() ? Auth::user()->email : 'admin@clarahayes.com' }}</span>
+                    <span class="admin-profile-role">{{ Auth::check() ? Auth::user()->email : 'admin@narocapture.com' }}</span>
                 </div>
             </div>
         </aside>

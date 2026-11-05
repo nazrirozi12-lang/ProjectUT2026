@@ -37,14 +37,14 @@
                         </div>
                         <div class="admin-meta-field">
                             <label class="admin-meta-label">Nama admin *</label>
-                            <input type="text" name="admin_name" class="admin-form-input" value="Clara Hayes" required>
+                            <input type="text" name="admin_name" class="admin-form-input" value="Naro Capture" required>
                         </div>
                     </div>
 
                     <div class="admin-meta-row-2">
                         <div class="admin-meta-field">
                             <label class="admin-meta-label">Email studio *</label>
-                            <input type="email" name="studio_email" class="admin-form-input" value="hello@clarahayes.studio" required>
+                            <input type="email" name="studio_email" class="admin-form-input" value="narocapture@gmail.com" required>
                         </div>
                         <div class="admin-meta-field">
                             <label class="admin-meta-label">WhatsApp studio</label>

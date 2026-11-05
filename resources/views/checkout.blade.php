@@ -62,7 +62,7 @@
                 <div class="chosen-package__info">
                     <span class="eyebrow-small">PAKET TERPILIH</span>
                     <h3 class="package-name-lg">{{ $data['package_name'] }}</h3>
-                    <p class="body-text">{{ $data['package_desc'] }}</p>
+                    @if (!empty($data['package_desc']))<p class="body-text">{{ $data['package_desc'] }}</p>@endif
                     <div class="package-price-highlight">{{ $data['package_price'] }} / sesi</div>
                 </div>
             </div>
@@ -167,7 +167,7 @@
             <div class="invoice-meta">
                 <span class="invoice-number">Nomor contoh: {{ $data['invoice_number'] }}</span>
                 <strong class="studio-name">Naro Capture</strong>
-                <span class="studio-email">hello@clarahayes.studio</span>
+                <span class="studio-email">narocapture@gmail.com</span>
             </div>
 
             <div class="invoice-order-ref">

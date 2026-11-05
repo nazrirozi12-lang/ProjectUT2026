@@ -18,16 +18,16 @@ Route::get('/', function () {
     // Karya terbaru: 3 kolom (masonry), sesuai Figma
     $columns = [
         [
-            ['image' => 'work-1.jpg', 'height' => 440, 'title' => 'Hari Kelulusan', 'category' => 'Wisuda'],
-            ['image' => 'work-2.jpg', 'height' => 260, 'title' => 'Pantai Bersama', 'category' => 'Keluarga'],
+            ['image' => 'work-1.jpg', 'height' => 440, 'title' => 'Graduation', 'category' => 'Wisuda'],
+            ['image' => 'work-2.jpg', 'height' => 260, 'title' => 'Family Photoshoot', 'category' => 'Keluarga'],
         ],
         [
-            ['image' => 'work-3.jpg', 'height' => 300, 'title' => 'Berjalan di Pecinan', 'category' => 'Prewedding'],
-            ['image' => 'work-4.jpg', 'height' => 400, 'title' => 'Sore di Taman', 'category' => 'Keluarga'],
+            ['image' => 'work-3.jpg', 'height' => 300, 'title' => 'Prewedding', 'category' => 'Prewedding'],
+            ['image' => 'work-4.jpg', 'height' => 400, 'title' => 'Family Photoshoot', 'category' => 'Keluarga'],
         ],
         [
-            ['image' => 'work-5.jpg', 'height' => 400, 'title' => 'Dalam Dekapan', 'category' => 'Prewedding'],
-            ['image' => 'work-6.jpg', 'height' => 300, 'title' => 'Tiup Lilin Bersama', 'category' => 'Ulang Tahun'],
+            ['image' => 'work-5.jpg', 'height' => 400, 'title' => 'Prewedding', 'category' => 'Prewedding'],
+            ['image' => 'work-6.jpg', 'height' => 300, 'title' => 'Birthday', 'category' => 'Ulang Tahun'],
         ],
     ];
 
@@ -35,24 +35,20 @@ Route::get('/', function () {
     $dbPackages = Package::where('is_active', true)->get();
     if ($dbPackages->isNotEmpty()) {
         $imageMap = [
-            'potret-pribadi' => 'paket-1.jpg',
-            'cerita-keluarga' => 'paket-2.jpg',
-            'editorial-bisnis' => 'paket-3.jpg',
-        ];
-        $labelMap = [
-            'potret-pribadi' => 'SESI SINGKAT, HASILNYA TETAP BERARTI',
-            'cerita-keluarga' => 'LEBIH BANYAK RUANG UNTUK BERBAGI',
-            'editorial-bisnis' => 'VISUALISASI BISNIS YANG LEBIH BERKESAN',
+            'birthday-family-photoshoot' => 'paket-1.jpg',
+            'prewedding' => 'paket-2.jpg',
+            'graduation' => 'paket-3.jpg',
         ];
 
-        $packages = $dbPackages->map(function ($pkg) use ($imageMap, $labelMap) {
+        $packages = $dbPackages->map(function ($pkg) use ($imageMap) {
             return [
                 'id' => $pkg->slug,
                 'image' => $imageMap[$pkg->slug] ?? 'paket-1.jpg',
                 'featured' => (bool)$pkg->is_featured,
-                'label' => $labelMap[$pkg->slug] ?? 'PAKET STUDIO',
+                'label' => '',
                 'name' => $pkg->name,
                 'description' => $pkg->description,
+                'note' => $pkg->tagline,
                 'price' => 'Rp' . number_format($pkg->price, 0, ',', '.'),
                 'items' => is_array($pkg->features) ? $pkg->features : [],
             ];
@@ -60,52 +56,37 @@ Route::get('/', function () {
     } else {
         $packages = [
             [
+                'id' => 'birthday-family-photoshoot',
                 'image' => 'paket-1.jpg',
-                'featured' => false,
-                'label' => 'SESI SINGKAT, HASILNYA TETAP BERARTI',
-                'name' => 'Potret Pribadi',
-                'description' => 'Sesi singkat untuk menangkap diri Anda dengan santai dan alami, cocok untuk profil pribadi atau kenangan pribadi.',
+                'featured' => true,
+                'label' => '',
+                'name' => 'Birthday/Family Photoshoot',
+                'description' => '',
+                'note' => 'Di luar transport',
                 'price' => 'Rp1.250.000',
-                'items' => [
-                    'Sesi 60 menit dengan panduan ringan',
-                    'Satu lokasi pilihan Anda',
-                    '10 foto diedit dengan hati-hati',
-                    'Galeri online pribadi',
-                    'Izin cetak pribadi',
-                ],
+                'items' => ['Durasi Foto: 2 Jam', '30 Edited Photo', '5 Photo Express', 'All Photo via Gdrive', 'Pengerjaan: 5-7 hari kerja'],
             ],
             [
+                'id' => 'prewedding',
                 'image' => 'paket-2.jpg',
                 'featured' => true,
-                'label' => 'LEBIH BANYAK RUANG UNTUK BERBAGI',
-                'name' => 'Cerita Keluarga',
-                'description' => 'Untuk keluarga, pasangan, dan momen-momen yang ingin dikenang bersama.',
-                'price' => 'Rp2.450.000',
-                'items' => [
-                    'Sesi 90 menit dengan narasi yang lebih dalam',
-                    'Dua lokasi dan dua ganti kostum',
-                    '20 foto diedit dengan hati-hati',
-                    'Panggilan perencanaan & panduan styling',
-                    'Galeri pribadi + izin cetak',
-                ],
+                'label' => '',
+                'name' => 'Prewedding',
+                'description' => '',
+                'note' => 'Di luar fee transport',
+                'price' => 'Rp2.000.000',
+                'items' => ['Durasi Foto: 2 Jam', '30 Edited Photo', 'All Photo via Google Drive', 'Pengerjaan: 7-10 hari kerja'],
             ],
             [
-                'id' => 'editorial-bisnis',
+                'id' => 'graduation',
                 'image' => 'paket-3.jpg',
                 'featured' => false,
-                'label' => 'VISUALISASI BISNIS YANG LEBIH BERKESAN',
-                'name' => 'Editorial Bisnis',
-                'duration' => 180,
-                'location_note' => 'Editorial Bisnis mencakup beberapa lokasi studio & komersial pilihan Anda.',
-                'description' => 'Fotografi yang disusun untuk merek lokal, kreator, dan bisnis yang ingin terlihat otentik.',
-                'price' => 'Rp4.500.000',
-                'items' => [
-                    'Sesi setengah hari untuk konten bisnis',
-                    'Beberapa lokasi & ganti kostum',
-                    '35 foto diedit untuk media sosial & iklan',
-                    'Arahan kreatif & moodboard',
-                    'Izin komersial untuk merek',
-                ],
+                'label' => '',
+                'name' => 'Graduation',
+                'description' => '',
+                'note' => 'Di luar transport',
+                'price' => 'Rp700.000',
+                'items' => ['Durasi Foto: 1 Jam', '15 Edited Photo', 'All Photo (Preview) via Gdrive', 'Unlimited Photo (khusus foto di studio)', 'Pengerjaan: 5-7 hari kerja'],
             ],
         ];
     }
@@ -130,7 +111,7 @@ Route::get('/galeri-klien', function () {
     $data = session('last_booking', [
         'order_code' => 'CH-CONTOH-001',
         'invoice_number' => 'INV-CH-2026-001',
-        'package_name' => 'Cerita Keluarga',
+        'package_name' => 'Prewedding',
         'nama_lengkap' => 'Ayu Pramesti',
         'session_date' => 'Sabtu, 17 Oktober 2026',
         'session_time' => '15.30–17.00 WIB · 90 menit',
@@ -234,7 +215,7 @@ Route::prefix('admin')->group(function () {
 
             $allGalleries = [
                 [
-                    'title' => 'Cerita Keluarga Ayu',
+                    'title' => 'Family Photoshoot Ayu',
                     'order_code' => 'CH-CONTOH-001',
                     'owner' => 'Ayu Pramesti',
                     'photos' => '6 / 50',

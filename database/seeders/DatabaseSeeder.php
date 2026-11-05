@@ -30,31 +30,33 @@ class DatabaseSeeder extends Seeder
         }
 
         User::updateOrCreate(
-            ['email' => env('ADMIN_EMAIL', 'admin@clarahayes.com')],
+            ['email' => env('ADMIN_EMAIL', 'admin@narocapture.com')],
             [
-                'name' => 'Clara Hayes Studio Admin',
+                'name' => 'Naro Capture Admin',
                 'password' => Hash::make($adminPassword),
             ]
         );
 
         // 2. Packages
+        // Paket Naro Capture (kode PKG-* dipertahankan agar data lama ikut terbarui)
         $pkgPotret = Package::updateOrCreate(
             ['code' => 'PKG-POTRET'],
             [
-                'slug' => 'potret-pribadi',
-                'name' => 'Potret Pribadi',
-                'tagline' => 'Untuk branding personal, profil profesional, atau momen personal bermakna.',
-                'description' => 'Sesi personal intimate dengan tata cahaya studio terkurasi untuk profil profesional dan kenangan pribadi.',
+                'slug' => 'birthday-family-photoshoot',
+                'name' => 'Birthday/Family Photoshoot',
+                'tagline' => 'Di luar transport',
+                'description' => null,
                 'price' => 1250000,
-                'duration' => '60 menit',
-                'duration_minutes' => 60,
-                'photo_count' => 10,
-                'photo_count_label' => '10 foto retouched',
+                'duration' => '2 jam',
+                'duration_minutes' => 120,
+                'photo_count' => 30,
+                'photo_count_label' => '30 edited photo + 5 photo express',
                 'features' => [
-                    '1 konsep background pilihan',
-                    '10 foto resolusi tinggi berlisensi pribadi',
-                    'Akses galeri digital selama 60 hari',
-                    'Konsultasi wardrobe & moodboard pra-sesi'
+                    'Durasi Foto: 2 Jam',
+                    '30 Edited Photo',
+                    '5 Photo Express',
+                    'All Photo via Gdrive',
+                    'Pengerjaan: 5-7 hari kerja',
                 ],
                 'badge' => 'Populer',
                 'is_active' => true,
@@ -65,20 +67,20 @@ class DatabaseSeeder extends Seeder
         $pkgKeluarga = Package::updateOrCreate(
             ['code' => 'PKG-KELUARGA'],
             [
-                'slug' => 'cerita-keluarga',
-                'name' => 'Cerita Keluarga',
-                'tagline' => 'Abadikan kehangatan bersama orang tercinta dalam sesi santai dan natural.',
-                'description' => 'Momen hangat keluarga tanpa kesan kaku dengan arahan pose luwes dan interaksi alami.',
-                'price' => 2450000,
-                'duration' => '90 menit',
-                'duration_minutes' => 90,
-                'photo_count' => 20,
-                'photo_count_label' => '20 foto retouched + cetak 10R',
+                'slug' => 'prewedding',
+                'name' => 'Prewedding',
+                'tagline' => 'Di luar fee transport',
+                'description' => null,
+                'price' => 2000000,
+                'duration' => '2 jam',
+                'duration_minutes' => 120,
+                'photo_count' => 30,
+                'photo_count_label' => '30 edited photo',
                 'features' => [
-                    'Maksimal 6 anggota keluarga',
-                    '2 ganti kostum / latar',
-                    '20 foto edited & file cetak 10R dengan frame kayu',
-                    'Semua file mentah (preview watermarked) via private cloud'
+                    'Durasi Foto: 2 Jam',
+                    '30 Edited Photo',
+                    'All Photo via Google Drive',
+                    'Pengerjaan: 7-10 hari kerja',
                 ],
                 'badge' => 'Pilihan Favorit',
                 'is_active' => true,
@@ -89,22 +91,23 @@ class DatabaseSeeder extends Seeder
         $pkgEditorial = Package::updateOrCreate(
             ['code' => 'PKG-EDITORIAL'],
             [
-                'slug' => 'editorial-bisnis',
-                'name' => 'Editorial Bisnis',
-                'tagline' => 'Kebutuhan visual katalog, lookbook brand, atau kampanye korporat profesional.',
-                'description' => 'Produksi visual terarah untuk kebutuhan komersial, brand lookbook, dan portofolio profesional.',
-                'price' => 4500000,
-                'duration' => '180 menit',
-                'duration_minutes' => 180,
-                'photo_count' => 35,
-                'photo_count_label' => '35 foto retouched + lisensi komersial',
+                'slug' => 'graduation',
+                'name' => 'Graduation',
+                'tagline' => 'Di luar transport',
+                'description' => null,
+                'price' => 700000,
+                'duration' => '1 jam',
+                'duration_minutes' => 60,
+                'photo_count' => 15,
+                'photo_count_label' => '15 edited photo',
                 'features' => [
-                    'Lisensi komersial penuh (digital & cetak)',
-                    'Pengaturan lighting multi-setup & tethering display live',
-                    '35 foto master retouch detail warna brand',
-                    'Termasuk 1 tim asisten studio & kopi kurasi'
+                    'Durasi Foto: 1 Jam',
+                    '15 Edited Photo',
+                    'All Photo (Preview) via Gdrive',
+                    'Unlimited Photo (khusus foto di studio)',
+                    'Pengerjaan: 5-7 hari kerja',
                 ],
-                'badge' => 'Komersial',
+                'badge' => 'Graduation',
                 'is_active' => true,
                 'is_featured' => false,
             ]
@@ -220,7 +223,7 @@ class DatabaseSeeder extends Seeder
                 'end_time' => '11:00:00',
                 'type' => 'booked',
                 'order_id' => $order1->id,
-                'note' => 'Potret Pribadi - Ayu Pramesti',
+                'note' => 'Birthday/Family Photoshoot - Ayu Pramesti',
             ]
         );
 
@@ -230,7 +233,7 @@ class DatabaseSeeder extends Seeder
                 'end_time' => '15:30:00',
                 'type' => 'booked',
                 'order_id' => $order2->id,
-                'note' => 'Cerita Keluarga - Budi Santoso',
+                'note' => 'Prewedding - Budi Santoso',
             ]
         );
 

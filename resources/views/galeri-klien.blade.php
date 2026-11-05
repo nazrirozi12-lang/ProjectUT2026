@@ -56,7 +56,7 @@
                 <span class="badge-tag" style="background:#E8F0FF; color:#3B5B9A; padding:6px 14px; font-size:11px; width:fit-content;">
                     50 foto diedit · Telah diserahkan
                 </span>
-                <h2 class="card-title font-25">{{ $data['package_name'] ?? 'Cerita Keluarga' }}</h2>
+                <h2 class="card-title font-25">{{ $data['package_name'] ?? 'Prewedding' }}</h2>
 
                 <div style="display:flex; flex-direction:column; gap:14px;">
                     <div>
@@ -165,10 +165,10 @@
                 <img src="{{ asset('images/icon-email.svg') }}" alt="" width="24" height="24" style="flex-shrink:0;">
                 <div>
                     <h3 class="subheader-title font-20">Ada yang ingin Anda tanyakan?</h3>
-                    <p class="body-text font-13">Hubungi hello@clarahayes.studio dan sertakan kode pesanan Anda. Jangan kirim PIN, kata sandi, atau kode OTP.</p>
+                    <p class="body-text font-13">Hubungi narocapture@gmail.com dan sertakan kode pesanan Anda. Jangan kirim PIN, kata sandi, atau kode OTP.</p>
                 </div>
             </div>
-            <a href="mailto:hello@clarahayes.studio" class="btn btn--outline" style="white-space: nowrap;">
+            <a href="mailto:narocapture@gmail.com" class="btn btn--outline" style="white-space: nowrap;">
                 Hubungi Studio
             </a>
         </div>

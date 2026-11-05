@@ -49,7 +49,7 @@
                 </div>
                 <div class="footer__col" style="width:180px">
                     <span class="eyebrow">HUBUNGI</span>
-                    <a href="mailto:hello@clarahayes.studio" class="icon-item"><img src="{{ asset('images/icon-email.svg') }}" alt="">hello@clarahayes.studio</a>
+                    <a href="mailto:narocapture@gmail.com" class="icon-item"><img src="{{ asset('images/icon-email.svg') }}" alt="">narocapture@gmail.com</a>
                     <span class="icon-item"><img src="{{ asset('images/icon-phone.svg') }}" alt="">Hubungi studio untuk informasi</span>
                     <span class="icon-item"><img src="{{ asset('images/icon-location.svg') }}" alt="">Jakarta, Indonesia</span>
                 </div>

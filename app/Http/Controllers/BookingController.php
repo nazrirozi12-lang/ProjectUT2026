@@ -21,9 +21,9 @@ class BookingController extends Controller
 
         $packages = $dbPackages->map(function ($pkg) {
             $imageMap = [
-                'potret-pribadi' => 'paket-1.jpg',
-                'cerita-keluarga' => 'paket-2.jpg',
-                'editorial-bisnis' => 'paket-3.jpg',
+                'birthday-family-photoshoot' => 'paket-1.jpg',
+                'prewedding' => 'paket-2.jpg',
+                'graduation' => 'paket-3.jpg',
             ];
 
             return [
@@ -34,11 +34,8 @@ class BookingController extends Controller
                 'raw_price' => $pkg->price,
                 'duration' => $pkg->duration_minutes ?? 60,
                 'duration_label' => $pkg->duration,
-                'location_note' => $pkg->slug === 'cerita-keluarga'
-                    ? 'Cerita Keluarga mencakup dua lokasi. Alamat dan lokasi akhir dibahas saat perencanaan.'
-                    : ($pkg->slug === 'editorial-bisnis'
-                        ? 'Editorial Bisnis mencakup beberapa lokasi studio & komersial pilihan Anda.'
-                        : 'Potret Pribadi mencakup satu lokasi pilihan Anda.'),
+                'location_note' => 'Lokasi sesi dibahas saat perencanaan. Biaya transport di luar harga paket.',
+                'note' => $pkg->tagline,
                 'image' => $imageMap[$pkg->slug] ?? 'paket-1.jpg',
                 'desc' => $pkg->description,
                 'items' => is_array($pkg->features) ? $pkg->features : [],
@@ -47,62 +44,34 @@ class BookingController extends Controller
 
         // Fallback jika database paket belum lengkap
         if (empty($packages)) {
+            $locNote = 'Lokasi sesi dibahas saat perencanaan. Biaya transport di luar harga paket.';
             $packages = [
                 [
-                    'id' => 'potret-pribadi',
-                    'name' => 'Potret Pribadi',
-                    'price' => 'Rp4.500.000',
-                    'raw_price' => 4500000,
-                    'duration' => 45,
-                    'duration_label' => '45 menit',
-                    'location_note' => 'Potret Pribadi mencakup satu lokasi pilihan Anda.',
-                    'image' => 'paket-1.jpg',
-                    'items' => [
-                        'Sesi 45 menit dengan panduan ringan',
-                        'Satu lokasi pilihan Anda',
-                        '20 foto diedit dengan hati-hati',
-                        'Galeri online pribadi',
-                        'Izin cetak pribadi',
-                    ],
+                    'id' => 'birthday-family-photoshoot', 'name' => 'Birthday/Family Photoshoot',
+                    'price' => 'Rp1.250.000', 'raw_price' => 1250000, 'duration' => 120, 'duration_label' => '2 jam',
+                    'location_note' => $locNote, 'note' => 'Di luar transport', 'image' => 'paket-1.jpg', 'desc' => '',
+                    'items' => ['Durasi Foto: 2 Jam', '30 Edited Photo', '5 Photo Express', 'All Photo via Gdrive', 'Pengerjaan: 5-7 hari kerja'],
                 ],
                 [
-                    'id' => 'cerita-keluarga',
-                    'name' => 'Cerita Keluarga',
-                    'price' => 'Rp9.500.000',
-                    'raw_price' => 9500000,
-                    'duration' => 90,
-                    'duration_label' => '90 menit',
-                    'location_note' => 'Cerita Keluarga mencakup dua lokasi. Alamat dan lokasi akhir dibahas saat perencanaan.',
-                    'image' => 'paket-2.jpg',
-                    'items' => [
-                        'Sesi 90 menit dengan narasi yang lebih dalam',
-                        'Dua lokasi dan dua ganti kostum',
-                        '50 foto diedit dengan hati-hati',
-                        'Panggilan perencanaan & panduan styling',
-                        'Galeri pribadi + izin cetak',
-                    ],
+                    'id' => 'prewedding', 'name' => 'Prewedding',
+                    'price' => 'Rp2.000.000', 'raw_price' => 2000000, 'duration' => 120, 'duration_label' => '2 jam',
+                    'location_note' => $locNote, 'note' => 'Di luar fee transport', 'image' => 'paket-2.jpg', 'desc' => '',
+                    'items' => ['Durasi Foto: 2 Jam', '30 Edited Photo', 'All Photo via Google Drive', 'Pengerjaan: 7-10 hari kerja'],
                 ],
                 [
-                    'id' => 'editorial-bisnis',
-                    'name' => 'Editorial Bisnis',
-                    'price' => 'Rp18.000.000',
-                    'raw_price' => 18000000,
-                    'duration' => 240,
-                    'duration_label' => '240 menit',
-                    'location_note' => 'Editorial Bisnis mencakup beberapa lokasi studio & komersial pilihan Anda.',
-                    'image' => 'paket-3.jpg',
-                    'items' => [
-                        'Sesi setengah hari untuk konten bisnis',
-                        'Beberapa lokasi & ganti kostum',
-                        '80 foto diedit untuk media sosial & iklan',
-                        'Arahan kreatif & moodboard',
-                        'Izin komersial untuk merek',
-                    ],
+                    'id' => 'graduation', 'name' => 'Graduation',
+                    'price' => 'Rp700.000', 'raw_price' => 700000, 'duration' => 60, 'duration_label' => '1 jam',
+                    'location_note' => $locNote, 'note' => 'Di luar transport', 'image' => 'paket-3.jpg', 'desc' => '',
+                    'items' => ['Durasi Foto: 1 Jam', '15 Edited Photo', 'All Photo (Preview) via Gdrive', 'Unlimited Photo (khusus foto di studio)', 'Pengerjaan: 5-7 hari kerja'],
                 ],
             ];
         }
 
-        $selectedPackageId = $request->query('package', 'cerita-keluarga');
+        // Paket terpilih: dari ?package=..., bila tidak cocok pakai paket kedua (atau pertama)
+        $selectedPackageId = $request->query('package');
+        if (!collect($packages)->contains('id', $selectedPackageId)) {
+            $selectedPackageId = ($packages[1]['id'] ?? ($packages[0]['id'] ?? null));
+        }
 
         return view('pemesanan', compact('packages', 'selectedPackageId'));
     }
@@ -127,26 +96,22 @@ class BookingController extends Controller
         $package = Package::where('slug', $packageSlug)->first();
 
         $imageMap = [
-            'potret-pribadi' => 'paket-1.jpg',
-            'cerita-keluarga' => 'paket-2.jpg',
-            'editorial-bisnis' => 'paket-3.jpg',
+            'birthday-family-photoshoot' => 'paket-1.jpg',
+            'prewedding' => 'paket-2.jpg',
+            'graduation' => 'paket-3.jpg',
         ];
 
         $packageName = $package ? $package->name : ucwords(str_replace('-', ' ', $packageSlug));
         $packagePrice = $package ? $package->price : 9500000;
         $packagePriceFormatted = 'Rp' . number_format($packagePrice, 0, ',', '.');
-        $packageImage = $imageMap[$packageSlug] ?? 'paket-2.jpg';
-        $packageDesc = $package ? $package->description : 'Sesi foto terarah studio.';
+        $packageImage = $imageMap[$packageSlug] ?? 'paket-1.jpg';
+        $packageDesc = $package ? (string) $package->description : '';
         $packageItems = $package && is_array($package->features) ? $package->features : [
             'Sesi foto studio terkurasi',
             'File resolusi tinggi via cloud pribadi',
             'Izin cetak pribadi'
         ];
-        $lokasiHint = $packageSlug === 'cerita-keluarga'
-            ? 'Dua lokasi termasuk dalam paket. Alamat dan lokasi akhir dibahas saat perencanaan.'
-            : ($packageSlug === 'editorial-bisnis'
-                ? 'Beberapa lokasi studio & komersial pilihan Anda.'
-                : 'Satu lokasi pilihan Anda.');
+        $lokasiHint = 'Lokasi sesi dibahas saat perencanaan. Biaya transport di luar harga paket.';
 
         // 1. Simpan atau perbarui Customer
         $customer = Customer::firstOrNew(['email' => $validated['email']]);

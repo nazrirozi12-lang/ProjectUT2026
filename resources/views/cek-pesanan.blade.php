@@ -421,10 +421,10 @@
                     <img src="{{ asset('images/icon-email.svg') }}" alt="" width="24" height="24" style="flex-shrink:0;">
                     <div>
                         <h3 class="subheader-title font-20">Ada yang ingin Anda tanyakan?</h3>
-                        <p class="body-text" style="font-size: 13px;">Hubungi hello@clarahayes.studio dan sertakan kode pesanan Anda. Jangan kirim PIN, kata sandi, atau kode OTP.</p>
+                        <p class="body-text" style="font-size: 13px;">Hubungi narocapture@gmail.com dan sertakan kode pesanan Anda. Jangan kirim PIN, kata sandi, atau kode OTP.</p>
                     </div>
                 </div>
-                <a href="mailto:hello@clarahayes.studio" class="btn btn--outline" style="white-space: nowrap;">
+                <a href="mailto:narocapture@gmail.com" class="btn btn--outline" style="white-space: nowrap;">
                     Hubungi studio @include('partials.arrow')
                 </a>
             </div>
@@ -433,8 +433,8 @@
             <div class="tracking-faq-grid">
                 <div class="tracking-faq-card">
                     <h4>Lupa kode pesanan?</h4>
-                    <p>Kode tersedia di checkout, invoice, dan konfirmasi pembayaran. Periksa juga email (termasuk spam) atau WhatsApp dari Clara Hayes. Kode pesanan berbeda dari nomor invoice.</p>
-                    <a href="mailto:hello@clarahayes.studio" class="link-blue font-12">Belum menemukannya? Hubungi studio dari kontak yang digunakan saat pemesanan.</a>
+                    <p>Kode tersedia di checkout, invoice, dan konfirmasi pembayaran. Periksa juga email (termasuk spam) atau WhatsApp dari Naro Capture. Kode pesanan berbeda dari nomor invoice.</p>
+                    <a href="mailto:narocapture@gmail.com" class="link-blue font-12">Belum menemukannya? Hubungi studio dari kontak yang digunakan saat pemesanan.</a>
                 </div>
 
                 <div class="tracking-faq-card">

@@ -6,7 +6,6 @@
     {{-- HERO --}}
     <section class="hero" style="background-image: linear-gradient(90deg, rgba(18,32,24,.8) 0%, rgba(18,32,24,0) 75%), url('{{ asset('images/hero.jpg') }}')">
         <div class="hero__message">
-            <span class="eyebrow eyebrow--light">FOTOGRAFI LIFESTYLE &amp; PORTRAIT INDONESIA</span>
             <h1 class="hero__title">Cerita Anda,<br>di setiap momen.</h1>
             <p class="hero__lead">Abadikan kebersamaan dan momen berharga dengan foto yang alami, hangat, dan penuh makna.</p>
             <a href="#paket" class="btn btn--fill" style="width:240px">Paket Layanan @include('partials.arrow')</a>
@@ -21,10 +20,9 @@
     <section id="karya" class="section">
         <div class="section__intro">
             <div class="section__heading">
-                <span class="eyebrow">BEBERAPA CERITA YANG TELAH KUABADIKAN</span>
+                <span class="eyebrow">BEBERAPA CERITA YANG TELAH KAMI ABADIKAN</span>
                 <h2 class="section__title">Karya Terbaru</h2>
             </div>
-            <p class="body-text" style="width:360px">Kumpulan potret keluarga, hubungan, dan momen sehari-hari yang ditangkap dengan alami dan penuh hati.</p>
         </div>
 
         <div class="masonry">
@@ -65,14 +63,18 @@
                     <img class="package__img" src="{{ asset('images/' . $pkg['image']) }}" alt="{{ $pkg['name'] }}">
                     <div class="package__body">
                         <div class="package__intro">
-                            <div class="package__label">
-                                <span>{{ $pkg['label'] }}</span>
-                                @if ($pkg['featured'])
-                                    <span class="badge">PILIHAN TERPOPULER</span>
-                                @endif
-                            </div>
+                            @if (!empty($pkg['label']) || $pkg['featured'])
+                                <div class="package__label">
+                                    <span>{{ $pkg['label'] ?? '' }}</span>
+                                    @if ($pkg['featured'])
+                                        <span class="badge">PILIHAN TERPOPULER</span>
+                                    @endif
+                                </div>
+                            @endif
                             <h3 class="package__name">{{ $pkg['name'] }}</h3>
-                            <p class="body-text package__desc">{{ $pkg['description'] }}</p>
+                            @if (!empty($pkg['description']))
+                                <p class="body-text package__desc">{{ $pkg['description'] }}</p>
+                            @endif
                         </div>
                         <div class="package__price">
                             <span>{{ $pkg['price'] }}</span><small>/ sesi</small>
@@ -83,7 +85,10 @@
                                 <li><img src="{{ asset('images/check.svg') }}" alt="">{{ $item }}</li>
                             @endforeach
                         </ul>
-                        <a href="{{ route('pemesanan', ['package' => Str::slug($pkg['name'])]) }}"
+                        @if (!empty($pkg['note']))
+                            <p class="package__note">{{ $pkg['note'] }}</p>
+                        @endif
+                        <a href="{{ route('pemesanan', ['package' => $pkg['id'] ?? Str::slug($pkg['name'])]) }}"
                            class="btn {{ $pkg['featured'] ? 'btn--fill' : 'btn--outline' }} btn--block">
                             Pesan {{ $pkg['name'] }} @include('partials.arrow')
                         </a>
@@ -94,7 +99,7 @@
 
         <div class="section__note" style="align-items:center">
             <span style="line-height:1.6">Setiap sesi dilengkapi dengan sentuhan yang lebih personal. Galeri biasanya dikirim dalam waktu dua minggu.</span>
-            <a href="mailto:hello@clarahayes.studio" class="link-blue">Butuh paket khusus?&nbsp; hello@clarahayes.studio ↗</a>
+            <a href="mailto:narocapture@gmail.com" class="link-blue">Butuh paket khusus?&nbsp; narocapture@gmail.com ↗</a>
         </div>
     </section>
 @endsection

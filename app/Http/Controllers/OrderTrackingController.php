@@ -70,11 +70,11 @@ class OrderTrackingController extends Controller
         $data = [
             'order_code' => $order ? $order->order_code : 'CH-CONTOH-001',
             'invoice_number' => $order ? $order->invoice_number : 'INV-CH-2026-001',
-            'package_name' => $order ? $order->package_name : 'Cerita Keluarga',
+            'package_name' => $order ? $order->package_name : 'Prewedding',
             'package_price' => $order ? 'Rp' . number_format($order->total_price, 0, ',', '.') : 'Rp9.500.000',
             'package_image' => 'paket-2.jpg',
             'package_duration' => 90,
-            'package_desc' => 'Untuk keluarga, pasangan, dan momen-momen yang ingin dikenang bersama.',
+            'package_desc' => '',
             'lokasi_hint' => 'Dua lokasi termasuk dalam paket. Alamat dan lokasi akhir dibahas saat perencanaan.',
             'package_items' => [
                 'Dua lokasi dan dua ganti kostum',

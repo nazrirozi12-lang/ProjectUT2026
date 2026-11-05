@@ -113,7 +113,7 @@ class AdminPaymentController extends Controller
                 'submitted_at' => $submittedAt,
                 'invoice' => $order ? $order->invoice_number : 'INV-CH-2026-001',
                 'order_code' => $order ? $order->order_code : 'CH-CONTOH-001',
-                'package_name' => $order ? $order->package_name : 'Cerita Keluarga',
+                'package_name' => $order ? $order->package_name : 'Prewedding',
                 'session_schedule' => $scheduleStr,
             ];
         } else {
@@ -127,11 +127,11 @@ class AdminPaymentController extends Controller
                 'transfer_date' => '5 Oktober 2026',
                 'bank_source' => 'Bank BCA',
                 'nominal' => 'Rp9.500.000',
-                'sender_note' => 'Pembayaran sesi Cerita Keluarga 17 Oktober.',
+                'sender_note' => 'Pembayaran sesi Prewedding 17 Oktober.',
                 'submitted_at' => '5 Okt 2026, 16.10 WIB',
                 'invoice' => 'INV-CH-2026-001',
                 'order_code' => 'CH-CONTOH-001',
-                'package_name' => 'Cerita Keluarga',
+                'package_name' => 'Prewedding',
                 'session_schedule' => '17 Okt 2026 · 15.30–17.00 WIB',
             ];
         }
