@@ -1,6 +1,6 @@
 @extends('layouts.admin')
 
-@section('title', 'Paket Layanan — Clara Hayes Photography')
+@section('title', 'Paket Layanan — Naro Capture')
 @section('breadcrumb', 'Paket Layanan / Paket layanan')
 
 @section('content')
@@ -47,7 +47,7 @@
     <div class="admin-packages-cards-grid">
         {{-- PAKET 1: POTRET PRIBADI --}}
         <div class="admin-panel admin-package-mgmt-card">
-            <img src="{{ asset('images/paket-1.png') }}" alt="Potret Pribadi" class="admin-package-mgmt-img">
+            <img src="{{ asset('images/paket-1.jpg') }}" alt="Potret Pribadi" class="admin-package-mgmt-img">
             <div class="admin-package-mgmt-body">
                 <div class="admin-package-card-header">
                     <span class="status-indicator-item text-green">● Aktif</span>
@@ -81,7 +81,7 @@
 
         {{-- PAKET 2: CERITA KELUARGA --}}
         <div class="admin-panel admin-package-mgmt-card">
-            <img src="{{ asset('images/paket-2.png') }}" alt="Cerita Keluarga" class="admin-package-mgmt-img">
+            <img src="{{ asset('images/paket-2.jpg') }}" alt="Cerita Keluarga" class="admin-package-mgmt-img">
             <div class="admin-package-mgmt-body">
                 <div class="admin-package-card-header">
                     <span class="status-indicator-item text-green">● Aktif</span>
@@ -115,7 +115,7 @@
 
         {{-- PAKET 3: EDITORIAL BISNIS --}}
         <div class="admin-panel admin-package-mgmt-card">
-            <img src="{{ asset('images/paket-3.png') }}" alt="Editorial Bisnis" class="admin-package-mgmt-img">
+            <img src="{{ asset('images/paket-3.jpg') }}" alt="Editorial Bisnis" class="admin-package-mgmt-img">
             <div class="admin-package-mgmt-body">
                 <div class="admin-package-card-header">
                     <span class="status-indicator-item text-green">● Aktif</span>
@@ -218,7 +218,7 @@
 
     {{-- FOOTER COPYRIGHT (FIGMA 141:3683) --}}
     <div class="admin-footer-copyright">
-        © 2026 Clara Hayes Photography · Data ilustrasi · Akses terbatas admin
+        © 2026 Naro Capture · Data ilustrasi · Akses terbatas admin
     </div>
 
     <script>

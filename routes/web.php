@@ -18,16 +18,16 @@ Route::get('/', function () {
     // Karya terbaru: 3 kolom (masonry), sesuai Figma
     $columns = [
         [
-            ['image' => 'work-1.png', 'height' => 440, 'title' => 'Minggu Pagi Bersama', 'category' => 'Keluarga'],
-            ['image' => 'work-2.png', 'height' => 260, 'title' => 'Di Rumah Bersama', 'category' => 'Pasangan'],
+            ['image' => 'work-1.jpg', 'height' => 440, 'title' => 'Hari Kelulusan', 'category' => 'Wisuda'],
+            ['image' => 'work-2.jpg', 'height' => 260, 'title' => 'Pantai Bersama', 'category' => 'Keluarga'],
         ],
         [
-            ['image' => 'work-3.png', 'height' => 300, 'title' => 'Seni Sehari-Hari', 'category' => 'Bisnis Kreatif'],
-            ['image' => 'work-4.png', 'height' => 400, 'title' => 'Sore di Taman', 'category' => 'Potret'],
+            ['image' => 'work-3.jpg', 'height' => 300, 'title' => 'Berjalan di Pecinan', 'category' => 'Prewedding'],
+            ['image' => 'work-4.jpg', 'height' => 400, 'title' => 'Sore di Taman', 'category' => 'Keluarga'],
         ],
         [
-            ['image' => 'work-5.png', 'height' => 400, 'title' => 'Di Mana Kita Berlabuh', 'category' => 'Pasangan'],
-            ['image' => 'work-6.png', 'height' => 300, 'title' => 'Ritual Pagi', 'category' => 'Lifestyle'],
+            ['image' => 'work-5.jpg', 'height' => 400, 'title' => 'Dalam Dekapan', 'category' => 'Prewedding'],
+            ['image' => 'work-6.jpg', 'height' => 300, 'title' => 'Tiup Lilin Bersama', 'category' => 'Ulang Tahun'],
         ],
     ];
 
@@ -35,9 +35,9 @@ Route::get('/', function () {
     $dbPackages = Package::where('is_active', true)->get();
     if ($dbPackages->isNotEmpty()) {
         $imageMap = [
-            'potret-pribadi' => 'paket-1.png',
-            'cerita-keluarga' => 'paket-2.png',
-            'editorial-bisnis' => 'paket-3.png',
+            'potret-pribadi' => 'paket-1.jpg',
+            'cerita-keluarga' => 'paket-2.jpg',
+            'editorial-bisnis' => 'paket-3.jpg',
         ];
         $labelMap = [
             'potret-pribadi' => 'SESI SINGKAT, HASILNYA TETAP BERARTI',
@@ -48,7 +48,7 @@ Route::get('/', function () {
         $packages = $dbPackages->map(function ($pkg) use ($imageMap, $labelMap) {
             return [
                 'id' => $pkg->slug,
-                'image' => $imageMap[$pkg->slug] ?? 'paket-1.png',
+                'image' => $imageMap[$pkg->slug] ?? 'paket-1.jpg',
                 'featured' => (bool)$pkg->is_featured,
                 'label' => $labelMap[$pkg->slug] ?? 'PAKET STUDIO',
                 'name' => $pkg->name,
@@ -60,7 +60,7 @@ Route::get('/', function () {
     } else {
         $packages = [
             [
-                'image' => 'paket-1.png',
+                'image' => 'paket-1.jpg',
                 'featured' => false,
                 'label' => 'SESI SINGKAT, HASILNYA TETAP BERARTI',
                 'name' => 'Potret Pribadi',
@@ -75,7 +75,7 @@ Route::get('/', function () {
                 ],
             ],
             [
-                'image' => 'paket-2.png',
+                'image' => 'paket-2.jpg',
                 'featured' => true,
                 'label' => 'LEBIH BANYAK RUANG UNTUK BERBAGI',
                 'name' => 'Cerita Keluarga',
@@ -91,7 +91,7 @@ Route::get('/', function () {
             ],
             [
                 'id' => 'editorial-bisnis',
-                'image' => 'paket-3.png',
+                'image' => 'paket-3.jpg',
                 'featured' => false,
                 'label' => 'VISUALISASI BISNIS YANG LEBIH BERKESAN',
                 'name' => 'Editorial Bisnis',

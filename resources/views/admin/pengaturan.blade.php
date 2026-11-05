@@ -1,6 +1,6 @@
 @extends('layouts.admin')
 
-@section('title', 'Pengaturan Studio — Clara Hayes Photography')
+@section('title', 'Pengaturan Studio — Naro Capture')
 @section('breadcrumb', 'Pengaturan / Pengaturan studio')
 
 @section('content')
@@ -33,7 +33,7 @@
                     <div class="admin-meta-row-2">
                         <div class="admin-meta-field">
                             <label class="admin-meta-label">Nama studio *</label>
-                            <input type="text" name="studio_name" class="admin-form-input" value="Clara Hayes Photography" required>
+                            <input type="text" name="studio_name" class="admin-form-input" value="Naro Capture" required>
                         </div>
                         <div class="admin-meta-field">
                             <label class="admin-meta-label">Nama admin *</label>
@@ -289,7 +289,7 @@
 
     {{-- FOOTER COPYRIGHT (FIGMA 141:4850) --}}
     <div class="admin-footer-copyright">
-        © 2026 Clara Hayes Photography · Data ilustrasi · Akses terbatas admin
+        © 2026 Naro Capture · Data ilustrasi · Akses terbatas admin
     </div>
 @endsection
 

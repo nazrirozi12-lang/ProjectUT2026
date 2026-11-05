@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>@yield('title', 'Clara Hayes Photography')</title>
+    <title>@yield('title', 'Naro Capture')</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ asset('css/style.css') }}">
@@ -17,9 +17,9 @@
 <body>
     {{-- NAVIGASI --}}
     <header class="nav">
-        <a href="{{ url('/') }}" class="brand brand--light">
-            <span class="brand__name">clara hayes.</span>
-            <span class="brand__tag">PHOTOGRAPHY STUDIO</span>
+        <a href="{{ url('/') }}" class="brand brand--light" aria-label="Naro Capture">
+            <img src="{{ asset('images/logo-white.png') }}" alt="Naro Capture" class="brand__logo brand__logo--light">
+            <img src="{{ asset('images/logo-black.png') }}" alt="" class="brand__logo brand__logo--dark" aria-hidden="true">
         </a>
         <nav class="nav__links">
             <a href="{{ url('/#karya') }}" class="nav__link">Karya terbaru</a>
@@ -36,8 +36,7 @@
     <footer class="footer">
         <div class="footer__top">
             <div class="footer__identity">
-                <span class="brand__name">clara hayes.</span>
-                <span class="brand__tag muted">STUDIO FOTOGRAFI</span>
+                <img src="{{ asset('images/logo-black.png') }}" alt="Naro Capture" class="brand__logo brand__logo--footer">
                 <p class="body-text">Fotografi otentik dan penuh hati untuk orang-orang yang ingin cerita mereka diceritakan dengan baik.</p>
             </div>
             <div class="footer__nav">
@@ -64,7 +63,7 @@
         </div>
         <hr class="divider">
         <div class="footer__bottom">
-            <span>© {{ date('Y') }} CLARA HAYES PHOTOGRAPHY</span>
+            <span>© {{ date('Y') }} NARO CAPTURE</span>
             <div class="footer__legal">
                 <a href="#">PRIVASI</a>
                 <a href="#">SYARAT</a>

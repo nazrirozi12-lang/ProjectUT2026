@@ -1,6 +1,6 @@
 @extends('layouts.admin')
 
-@section('title', 'Dashboard — Admin Backoffice Clara Hayes')
+@section('title', 'Dashboard — Admin Backoffice Naro Capture')
 @section('breadcrumb', 'Dashboard / Selamat pagi, Clara')
 
 @section('content')
@@ -198,7 +198,7 @@
 </div>
 
 <p class="admin-footer-copyright">
-    © 2026 Clara Hayes Photography · Data ilustrasi · Akses terbatas admin
+    © 2026 Naro Capture · Data ilustrasi · Akses terbatas admin
 </p>
 @endsection
 

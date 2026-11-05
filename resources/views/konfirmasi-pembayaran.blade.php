@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Konfirmasi Pembayaran — Clara Hayes Photography')
+@section('title', 'Konfirmasi Pembayaran — Naro Capture')
 
 @section('content')
 <main class="confirmation-page">

@@ -1,6 +1,6 @@
 @extends('layouts.admin')
 
-@section('title', 'Detail Pesanan ' . $order['code'] . ' — Clara Hayes Photography')
+@section('title', 'Detail Pesanan ' . $order['code'] . ' — Naro Capture')
 @section('breadcrumb', 'Pesanan / Detail pesanan')
 
 @section('content')
@@ -351,7 +351,7 @@
 
     {{-- FOOTER COPYRIGHT (FIGMA 141:1199) --}}
     <div class="admin-footer-copyright">
-        © 2026 Clara Hayes Photography · Data ilustrasi · Akses terbatas admin
+        © 2026 Naro Capture · Data ilustrasi · Akses terbatas admin
     </div>
 
     <script>

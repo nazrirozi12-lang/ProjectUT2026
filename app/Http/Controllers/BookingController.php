@@ -21,9 +21,9 @@ class BookingController extends Controller
 
         $packages = $dbPackages->map(function ($pkg) {
             $imageMap = [
-                'potret-pribadi' => 'paket-1.png',
-                'cerita-keluarga' => 'paket-2.png',
-                'editorial-bisnis' => 'paket-3.png',
+                'potret-pribadi' => 'paket-1.jpg',
+                'cerita-keluarga' => 'paket-2.jpg',
+                'editorial-bisnis' => 'paket-3.jpg',
             ];
 
             return [
@@ -39,7 +39,7 @@ class BookingController extends Controller
                     : ($pkg->slug === 'editorial-bisnis'
                         ? 'Editorial Bisnis mencakup beberapa lokasi studio & komersial pilihan Anda.'
                         : 'Potret Pribadi mencakup satu lokasi pilihan Anda.'),
-                'image' => $imageMap[$pkg->slug] ?? 'paket-1.png',
+                'image' => $imageMap[$pkg->slug] ?? 'paket-1.jpg',
                 'desc' => $pkg->description,
                 'items' => is_array($pkg->features) ? $pkg->features : [],
             ];
@@ -56,7 +56,7 @@ class BookingController extends Controller
                     'duration' => 45,
                     'duration_label' => '45 menit',
                     'location_note' => 'Potret Pribadi mencakup satu lokasi pilihan Anda.',
-                    'image' => 'paket-1.png',
+                    'image' => 'paket-1.jpg',
                     'items' => [
                         'Sesi 45 menit dengan panduan ringan',
                         'Satu lokasi pilihan Anda',
@@ -73,7 +73,7 @@ class BookingController extends Controller
                     'duration' => 90,
                     'duration_label' => '90 menit',
                     'location_note' => 'Cerita Keluarga mencakup dua lokasi. Alamat dan lokasi akhir dibahas saat perencanaan.',
-                    'image' => 'paket-2.png',
+                    'image' => 'paket-2.jpg',
                     'items' => [
                         'Sesi 90 menit dengan narasi yang lebih dalam',
                         'Dua lokasi dan dua ganti kostum',
@@ -90,7 +90,7 @@ class BookingController extends Controller
                     'duration' => 240,
                     'duration_label' => '240 menit',
                     'location_note' => 'Editorial Bisnis mencakup beberapa lokasi studio & komersial pilihan Anda.',
-                    'image' => 'paket-3.png',
+                    'image' => 'paket-3.jpg',
                     'items' => [
                         'Sesi setengah hari untuk konten bisnis',
                         'Beberapa lokasi & ganti kostum',
@@ -127,15 +127,15 @@ class BookingController extends Controller
         $package = Package::where('slug', $packageSlug)->first();
 
         $imageMap = [
-            'potret-pribadi' => 'paket-1.png',
-            'cerita-keluarga' => 'paket-2.png',
-            'editorial-bisnis' => 'paket-3.png',
+            'potret-pribadi' => 'paket-1.jpg',
+            'cerita-keluarga' => 'paket-2.jpg',
+            'editorial-bisnis' => 'paket-3.jpg',
         ];
 
         $packageName = $package ? $package->name : ucwords(str_replace('-', ' ', $packageSlug));
         $packagePrice = $package ? $package->price : 9500000;
         $packagePriceFormatted = 'Rp' . number_format($packagePrice, 0, ',', '.');
-        $packageImage = $imageMap[$packageSlug] ?? 'paket-2.png';
+        $packageImage = $imageMap[$packageSlug] ?? 'paket-2.jpg';
         $packageDesc = $package ? $package->description : 'Sesi foto terarah studio.';
         $packageItems = $package && is_array($package->features) ? $package->features : [
             'Sesi foto studio terkurasi',
@@ -186,7 +186,7 @@ class BookingController extends Controller
             'total_price' => $packagePrice,
             'session_date' => $sessionDateSql,
             'session_time_slot' => $rawTimeSlot,
-            'location' => $validated['lokasi'] ?? 'Studio Utama Clara Hayes',
+            'location' => $validated['lokasi'] ?? 'Studio Utama Naro Capture',
             'customer_notes' => $validated['catatan'] ?? null,
             'session_status' => 'Permintaan',
             'payment_status' => 'Belum dibayar',

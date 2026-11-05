@@ -3997,3 +3997,21 @@ body:has(.gallery-page) .btn--outline-light:hover {
 
 
 
+
+
+/* ===== Logo Naro Capture ===== */
+.brand__logo { height: 46px; width: auto; display: block; }
+.brand__logo--dark { display: none; }
+body:has(.booking-page) .brand__logo--light,
+body:has(.checkout-page) .brand__logo--light,
+body:has(.confirmation-page) .brand__logo--light,
+body:has(.tracking-page) .brand__logo--light,
+body:has(.gallery-page) .brand__logo--light { display: none; }
+body:has(.booking-page) .brand__logo--dark,
+body:has(.checkout-page) .brand__logo--dark,
+body:has(.confirmation-page) .brand__logo--dark,
+body:has(.tracking-page) .brand__logo--dark,
+body:has(.gallery-page) .brand__logo--dark { display: block; }
+.brand__logo--footer { height: 52px; align-self: flex-start; }
+.admin-brand-logo { height: 40px; width: auto; display: block; align-self: flex-start; }
+.admin-login-brand .admin-brand-logo { height: 56px; align-self: center; }

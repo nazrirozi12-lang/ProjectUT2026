@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Ringkasan & Invoice — Clara Hayes Photography')
+@section('title', 'Ringkasan & Invoice — Naro Capture')
 
 @section('content')
 <main class="checkout-page">
@@ -166,7 +166,7 @@
 
             <div class="invoice-meta">
                 <span class="invoice-number">Nomor contoh: {{ $data['invoice_number'] }}</span>
-                <strong class="studio-name">Clara Hayes Photography</strong>
+                <strong class="studio-name">Naro Capture</strong>
                 <span class="studio-email">hello@clarahayes.studio</span>
             </div>
 

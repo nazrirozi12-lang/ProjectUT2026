@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>@yield('title', 'Admin Backoffice — Clara Hayes Photography')</title>
+    <title>@yield('title', 'Admin Backoffice — Naro Capture')</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ asset('css/style.css') }}">
@@ -13,8 +13,8 @@
         {{-- SIDEBAR STUDIO (FIGMA 141:867) --}}
         <aside class="admin-sidebar">
             <div class="admin-brand">
-                <span class="admin-brand-name">clara hayes.</span>
-                <span class="admin-brand-tag">STUDIO FOTOGRAFI / BACKOFFICE</span>
+                <img src="{{ asset('images/logo-black.png') }}" alt="Naro Capture" class="admin-brand-logo">
+                <span class="admin-brand-tag">BACKOFFICE</span>
             </div>
 
             <nav class="admin-nav-menu">
@@ -94,7 +94,7 @@
                 </form>
                 <hr class="divider">
                 <div class="admin-profile-meta">
-                    <strong class="admin-profile-name">{{ Auth::check() ? Auth::user()->name : 'CH · Clara Hayes' }}</strong>
+                    <strong class="admin-profile-name">{{ Auth::check() ? Auth::user()->name : 'NC · Naro Capture' }}</strong>
                     <span class="admin-profile-role">{{ Auth::check() ? Auth::user()->email : 'admin@clarahayes.com' }}</span>
                 </div>
             </div>

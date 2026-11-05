@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Pemesanan — Clara Hayes Photography')
+@section('title', 'Pemesanan — Naro Capture')
 
 @section('content')
 <main class="booking-page">

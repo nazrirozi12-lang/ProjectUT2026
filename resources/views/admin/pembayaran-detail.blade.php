@@ -1,6 +1,6 @@
 @extends('layouts.admin')
 
-@section('title', 'Detail Bukti Pembayaran ' . $payment['id'] . ' — Clara Hayes Photography')
+@section('title', 'Detail Bukti Pembayaran ' . $payment['id'] . ' — Naro Capture')
 @section('breadcrumb', 'Pembayaran / Detail bukti pembayaran')
 
 @section('content')
@@ -303,7 +303,7 @@
 
     {{-- FOOTER COPYRIGHT (FIGMA 141:1865) --}}
     <div class="admin-footer-copyright">
-        © 2026 Clara Hayes Photography · Data ilustrasi · Akses terbatas admin
+        © 2026 Naro Capture · Data ilustrasi · Akses terbatas admin
     </div>
 
     <script>
