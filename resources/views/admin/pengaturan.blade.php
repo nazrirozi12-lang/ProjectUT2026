@@ -13,10 +13,10 @@
     </div>
 
     {{-- FEEDBACK NOTICE (FIGMA 141:4717) --}}
-    <div class="admin-alert-box alert-success-box">
-        <strong class="admin-alert-title text-green">Pengaturan berhasil disimpan</strong>
-        <p class="admin-alert-desc text-green">
-            Profil dan preferensi notifikasi diperbarui pada 6 Oktober 2026, 09.20 WIB. Data pembayaran resmi belum dikonfigurasi.
+    <div class="admin-alert-box">
+        <strong class="admin-alert-title">Yang tersimpan di halaman ini</strong>
+        <p class="admin-alert-desc">
+            Profil studio (nama, email, WhatsApp, lokasi, zona waktu) disimpan ke database. Opsi pemesanan, pembayaran, dan notifikasi lainnya masih berupa tampilan referensi dan belum memengaruhi sistem.
         </p>
     </div>
 
@@ -33,36 +33,36 @@
                     <div class="admin-meta-row-2">
                         <div class="admin-meta-field">
                             <label class="admin-meta-label">Nama studio *</label>
-                            <input type="text" name="studio_name" class="admin-form-input" value="Naro Capture" required>
+                            <input type="text" name="studio_name" class="admin-form-input" value="{{ old('studio_name', $settings['studio_name']) }}" required>
                         </div>
                         <div class="admin-meta-field">
                             <label class="admin-meta-label">Nama admin *</label>
-                            <input type="text" name="admin_name" class="admin-form-input" value="Naro Capture" required>
+                            <input type="text" name="admin_name" class="admin-form-input" value="{{ old('admin_name', $settings['admin_name']) }}" required>
                         </div>
                     </div>
 
                     <div class="admin-meta-row-2">
                         <div class="admin-meta-field">
                             <label class="admin-meta-label">Email studio *</label>
-                            <input type="email" name="studio_email" class="admin-form-input" value="narocapture@gmail.com" required>
+                            <input type="email" name="studio_email" class="admin-form-input" value="{{ old('studio_email', $settings['studio_email']) }}" required>
                         </div>
                         <div class="admin-meta-field">
                             <label class="admin-meta-label">WhatsApp studio</label>
-                            <input type="text" name="studio_whatsapp" class="admin-form-input" value="Belum dikonfigurasi">
+                            <input type="text" name="studio_whatsapp" class="admin-form-input" placeholder="08xx xxxx xxxx" value="{{ old('studio_whatsapp', $settings['studio_whatsapp']) }}">
                         </div>
                     </div>
 
                     <div class="admin-meta-row-2">
                         <div class="admin-meta-field">
                             <label class="admin-meta-label">Lokasi studio</label>
-                            <input type="text" name="studio_location" class="admin-form-input" value="Jakarta, Indonesia">
+                            <input type="text" name="studio_location" class="admin-form-input" value="{{ old('studio_location', $settings['studio_location']) }}">
                         </div>
                         <div class="admin-meta-field">
                             <label class="admin-meta-label">Zona waktu *</label>
                             <select name="timezone" class="admin-form-input">
-                                <option value="WIB" selected>WIB · UTC+7</option>
-                                <option value="WITA">WITA · UTC+8</option>
-                                <option value="WIT">WIT · UTC+9</option>
+                                <option value="WIB" @selected(old('timezone', $settings['timezone']) === 'WIB')>WIB · UTC+7</option>
+                                <option value="WITA" @selected(old('timezone', $settings['timezone']) === 'WITA')>WITA · UTC+8</option>
+                                <option value="WIT" @selected(old('timezone', $settings['timezone']) === 'WIT')>WIT · UTC+9</option>
                             </select>
                         </div>
                     </div>
@@ -289,7 +289,7 @@
 
     {{-- FOOTER COPYRIGHT (FIGMA 141:4850) --}}
     <div class="admin-footer-copyright">
-        © 2026 Naro Capture · Data ilustrasi · Akses terbatas admin
+        © {{ date('Y') }} Naro Capture · Akses terbatas admin
     </div>
 @endsection
 

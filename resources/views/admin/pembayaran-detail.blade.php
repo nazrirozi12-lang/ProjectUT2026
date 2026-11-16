@@ -32,30 +32,41 @@
                 <div class="admin-doc-toolbar">
                     <strong class="doc-filename-text">{{ $payment['file_name'] }}</strong>
                     <span class="doc-meta-text">{{ $payment['file_meta'] }}</span>
-                    @if (!empty($payment['file_path']))
-                        <a href="{{ $payment['file_path'] }}" target="_blank" rel="noopener" class="doc-meta-text">Buka berkas bukti ↗</a>
-                    @endif
                 </div>
 
-                {{-- PRATINJAU ILUSTRASI BUKTI (FIGMA 141:1815) --}}
-                <div class="admin-doc-preview-box">
-                    <svg width="54" height="54" viewBox="0 0 24 24" fill="none" stroke="#3B5B9A" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                        <polyline points="14 2 14 8 20 8"></polyline>
-                        <line x1="16" y1="13" x2="8" y2="13"></line>
-                        <line x1="16" y1="17" x2="8" y2="17"></line>
-                        <polyline points="10 9 9 9 8 9"></polyline>
-                    </svg>
-                    <strong class="doc-preview-title">Dokumen ilustrasi</strong>
-                    <p class="doc-preview-desc">
-                        Placeholder bukti pembayaran, bukan struk bank asli. Tidak ada nomor rekening atau referensi transaksi nyata.
-                    </p>
-                    <span class="status-indicator-item text-blue">● BUKTI CONTOH · TIDAK UNTUK TRANSAKSI</span>
-                </div>
+                {{-- PRATINJAU DOKUMEN BUKTI (nyata) --}}
+                @if ($payment['proof']['available'] && $payment['proof']['kind'] === 'image')
+                    <div class="admin-doc-preview-box" style="padding:12px; align-items:center;">
+                        <a href="{{ $payment['proof']['url'] }}" target="_blank" rel="noopener">
+                            <img src="{{ $payment['proof']['url'] }}" alt="Bukti transfer {{ $payment['sender'] }}" style="max-width:100%; max-height:560px; border-radius:6px; display:block; margin:0 auto;">
+                        </a>
+                    </div>
+                @elseif ($payment['proof']['available'] && $payment['proof']['kind'] === 'pdf')
+                    <iframe src="{{ $payment['proof']['url'] }}" title="Bukti transfer PDF" style="width:100%; height:560px; border:1px solid var(--line); border-radius:6px;"></iframe>
+                @elseif ($payment['proof']['available'])
+                    <div class="admin-doc-preview-box">
+                        <strong class="doc-preview-title">Pratinjau tidak tersedia untuk jenis berkas ini</strong>
+                        <p class="doc-preview-desc">Unduh berkas untuk memeriksanya.</p>
+                    </div>
+                @elseif ($payment['has_proof_file'])
+                    <div class="admin-doc-preview-box">
+                        <strong class="doc-preview-title">Berkas bukti tidak ditemukan di server</strong>
+                        <p class="doc-preview-desc">
+                            Berkas tidak tersimpan (kemungkinan diunggah sebelum penyimpanan bukti diaktifkan). Minta pelanggan mengunggah ulang bukti transfer lewat “Minta perbaikan bukti”.
+                        </p>
+                    </div>
+                @else
+                    <div class="admin-doc-preview-box">
+                        <strong class="doc-preview-title">Tanpa berkas bukti</strong>
+                        <p class="doc-preview-desc">Pembayaran ini dicatat manual oleh admin sehingga tidak ada berkas unggahan pelanggan.</p>
+                    </div>
+                @endif
 
-                <button type="button" class="admin-btn-outline" onclick="alert('Membuka pratinjau berkas ilustrasi.')">
-                    Buka berkas ilustrasi
-                </button>
+                @if ($payment['proof']['available'])
+                    <a href="{{ $payment['proof']['url'] }}" target="_blank" rel="noopener" class="admin-btn-outline" style="text-align:center;">
+                        Buka berkas di tab baru ↗
+                    </a>
+                @endif
             </div>
 
             {{-- PANEL DATA TRANSFER YANG DIAJUKAN (FIGMA 141:1824) --}}
@@ -90,7 +101,7 @@
                 </div>
 
                 <span class="admin-meta-hint">
-                    Dikirim pelanggan · {{ $payment['submitted_at'] }} · Bukti asli dipertahankan
+                    Dikirim · {{ $payment['submitted_at'] }} · Bukti asli dipertahankan
                 </span>
             </div>
         </div>
@@ -121,24 +132,43 @@
                     <p class="admin-meta-val">{{ $payment['session_schedule'] }}</p>
                 </div>
 
-                {{-- NOTICE KECOCOKAN NOMINAL (FIGMA 141:1841) --}}
-                <div class="admin-alert-box">
-                    <strong class="admin-alert-title">Nominal cocok dengan invoice</strong>
-                    <p class="admin-alert-desc">Tetap periksa bukti dan kecocokan tujuan menggunakan data resmi studio.</p>
+                <div class="admin-meta-field">
+                    <label class="admin-meta-label">Total invoice</label>
+                    <p class="admin-meta-val font-mono">{{ $payment['invoice_total'] }}</p>
                 </div>
 
-                {{-- TOMBOL PEMICU MODAL VERIFIKASI (FIGMA 141:1844) --}}
-                <button type="button" class="admin-btn-primary w-full" id="btn-open-verify-modal">
-                    Verifikasi pembayaran
-                </button>
+                {{-- KECOCOKAN NOMINAL (dihitung dari data) --}}
+                @if ($payment['nominal_matches'])
+                    <div class="admin-alert-box alert-success-box">
+                        <strong class="admin-alert-title text-green">Nominal cocok dengan invoice</strong>
+                        <p class="admin-alert-desc text-green">Tetap periksa bukti dan kecocokan tujuan menggunakan data resmi studio.</p>
+                    </div>
+                @else
+                    <div class="admin-alert-box alert-warning-box">
+                        <strong class="admin-alert-title text-gold">Nominal tidak sama dengan invoice</strong>
+                        <p class="admin-alert-desc text-gold">Bukti {{ $payment['nominal'] }} · Invoice {{ $payment['invoice_total'] }}. Periksa kembali sebelum memverifikasi.</p>
+                    </div>
+                @endif
 
-                <button type="button" class="admin-btn-outline w-full" id="btn-open-request-fix-modal">
-                    Minta perbaikan bukti
-                </button>
+                @if ($payment['customer_message'])
+                    <div class="admin-meta-field">
+                        <label class="admin-meta-label">Pesan perbaikan ke pelanggan</label>
+                        <p class="admin-meta-val">{{ $payment['customer_message'] }}</p>
+                    </div>
+                @endif
 
-                <button type="button" class="admin-btn-outline w-full" id="btn-open-edit-note-modal">
-                    Edit catatan
-                </button>
+                @if ($payment['can_review'])
+                    <button type="button" class="admin-btn-primary w-full" id="btn-open-verify-modal">Verifikasi pembayaran</button>
+                    <button type="button" class="admin-btn-outline w-full" id="btn-open-request-fix-modal">Minta perbaikan bukti</button>
+                @else
+                    <div class="admin-alert-box alert-success-box">
+                        <strong class="admin-alert-title text-green">Pembayaran sudah terverifikasi</strong>
+                        <p class="admin-alert-desc text-green">Konfirmasi jadwal dilakukan terpisah di halaman Pesanan.</p>
+                    </div>
+                    <a href="{{ route('admin.pesanan.detail', ['id' => $payment['order_code']]) }}" class="admin-btn-outline w-full text-center">Buka pesanan terkait →</a>
+                @endif
+
+                <button type="button" class="admin-btn-outline w-full" id="btn-open-edit-note-modal">Edit catatan</button>
             </div>
 
             {{-- PANEL RIWAYAT TINJAUAN (FIGMA 141:1859) --}}
@@ -146,12 +176,16 @@
                 <h2 class="admin-panel-title">Riwayat tinjauan</h2>
 
                 <div class="admin-meta-field">
-                    <span class="status-indicator-item text-muted">● Belum ada keputusan</span>
+                    <span class="status-indicator-item text-muted">● {{ $payment['decision'] }}</span>
                 </div>
 
                 <div class="admin-review-history-steps">
-                    <p class="review-step-text">5 Okt, 16.10 · {{ $payment['sender'] }} mengirim bukti dan data transfer.</p>
-                    <p class="review-step-text">6 Okt, 09.15 · Clara membuka bukti untuk tinjauan.</p>
+                    @foreach ($payment['history'] as $line)
+                        <p class="review-step-text">{{ $line }}</p>
+                    @endforeach
+                    @if ($payment['internal_note'])
+                        <p class="review-step-text">Catatan admin: {{ $payment['internal_note'] }}</p>
+                    @endif
                 </div>
 
                 <hr class="divider">
@@ -190,15 +224,23 @@
                 <p class="admin-meta-val">{{ $payment['nominal'] }} / {{ $payment['nominal'] }} · Cocok</p>
             </div>
 
-            <label class="admin-checkbox-label">
-                <input type="checkbox" checked required>
-                <span>Saya telah meninjau nominal, pengirim, bukti, dan kecocokan referensi invoice menggunakan data resmi studio.</span>
-            </label>
+            <form action="{{ route('admin.pembayaran.verifikasi-action', ['id' => $payment['id']]) }}" method="POST" id="form-verify-payment">
+                @csrf
+                <div class="admin-meta-field">
+                    <label class="admin-meta-label">Nominal bukti / invoice</label>
+                    <p class="admin-meta-val">{{ $payment['nominal'] }} / {{ $payment['invoice_total'] }} · {{ $payment['nominal_matches'] ? 'Cocok' : 'Tidak sama' }}</p>
+                </div>
 
-            <div class="admin-meta-field">
-                <label class="admin-meta-label">Catatan internal (opsional)</label>
-                <input type="text" class="admin-form-input" value="Bukti contoh sesuai nominal invoice.">
-            </div>
+                <label class="admin-checkbox-label">
+                    <input type="checkbox" name="konfirmasi" value="1" required>
+                    <span>Saya telah meninjau nominal, pengirim, bukti, dan kecocokan referensi invoice menggunakan data resmi studio.</span>
+                </label>
+
+                <div class="admin-meta-field">
+                    <label class="admin-meta-label">Catatan internal (opsional)</label>
+                    <input type="text" name="catatan" class="admin-form-input" maxlength="500" placeholder="Contoh: Sesuai mutasi rekening studio.">
+                </div>
+            </form>
 
             <div class="admin-alert-box alert-warning-box">
                 <strong class="admin-alert-title text-gold">Pembayaran terverifikasi ≠ jadwal dikonfirmasi</strong>
@@ -209,11 +251,10 @@
 
             <hr class="divider">
 
-            <form action="{{ route('admin.pembayaran.verifikasi-action', ['id' => $payment['id']]) }}" method="POST" class="admin-modal-actions">
-                @csrf
+            <div class="admin-modal-actions">
                 <button type="button" class="admin-btn-outline" data-close="modal-verify">Batal</button>
-                <button type="submit" class="admin-btn-primary">Ya, verifikasi pembayaran</button>
-            </form>
+                <button type="submit" form="form-verify-payment" class="admin-btn-primary">Ya, verifikasi pembayaran</button>
+            </div>
         </div>
     </div>
 
@@ -234,20 +275,24 @@
 
             <hr class="divider">
 
-            <div class="admin-meta-field">
-                <label class="admin-meta-label">Alasan perbaikan *</label>
-                <select class="admin-form-input">
-                    <option selected>Nominal atau nomor rekening tujuan tidak terbaca jelas</option>
-                    <option>Nominal transfer tidak sesuai dengan total invoice</option>
-                    <option>Struk tidak memuat waktu atau referensi bank yang valid</option>
-                    <option>Lainnya (tulis di bawah)</option>
-                </select>
-            </div>
+            <form action="{{ route('admin.pembayaran.minta-perbaikan', ['id' => $payment['id']]) }}" method="POST" id="form-request-fix">
+                @csrf
+                <div class="admin-meta-field">
+                    <label class="admin-meta-label">Alasan perbaikan *</label>
+                    <select name="alasan" class="admin-form-input" required>
+                        <option>Nominal atau nomor rekening tujuan tidak terbaca jelas</option>
+                        <option>Nominal transfer tidak sesuai dengan total invoice</option>
+                        <option>Struk tidak memuat waktu atau referensi bank yang valid</option>
+                        <option>Berkas bukti tidak dapat dibuka</option>
+                        <option>Lainnya (tulis di pesan)</option>
+                    </select>
+                </div>
 
-            <div class="admin-meta-field">
-                <label class="admin-meta-label">Pesan instruksi untuk pelanggan *</label>
-                <textarea class="admin-form-input" rows="3">Mohon unggah kembali bukti transfer yang menampilkan tanggal, nama penerima, dan nominal secara lengkap.</textarea>
-            </div>
+                <div class="admin-meta-field">
+                    <label class="admin-meta-label">Pesan instruksi untuk pelanggan *</label>
+                    <textarea name="pesan" class="admin-form-input" rows="3" required minlength="5" maxlength="500">{{ old('pesan', 'Mohon unggah kembali bukti transfer yang menampilkan tanggal, nama penerima, dan nominal secara lengkap.') }}</textarea>
+                </div>
+            </form>
 
             <p class="admin-meta-disclaimer">
                 Status pembayaran pelanggan akan berubah menjadi “Perlu perbaikan bukti”. Pelanggan dapat mengunggah struk baru tanpa membuat pesanan ulang.
@@ -257,9 +302,7 @@
 
             <div class="admin-modal-actions">
                 <button type="button" class="admin-btn-outline" data-close="modal-request-fix">Batal</button>
-                <button type="button" class="admin-btn-primary" style="background:#94671E; border-color:#94671E;" onclick="alert('Permintaan perbaikan bukti telah dikirim ke pelanggan.')">
-                    Kirim permintaan perbaikan
-                </button>
+                <button type="submit" form="form-request-fix" class="admin-btn-primary" style="background:#94671E; border-color:#94671E;">Kirim permintaan perbaikan</button>
             </div>
         </div>
     </div>
@@ -281,33 +324,40 @@
 
             <hr class="divider">
 
-            <div class="admin-meta-field">
-                <label class="admin-meta-label">Catatan internal admin</label>
-                <textarea class="admin-form-input" rows="4">Bukti contoh sesuai nominal invoice. Menunggu pengecekan mutasi bank studio oleh admin.</textarea>
-            </div>
+            <form action="{{ route('admin.pembayaran.catatan', ['id' => $payment['id']]) }}" method="POST" id="form-edit-note">
+                @csrf
+                <div class="admin-meta-field">
+                    <label class="admin-meta-label">Catatan internal admin</label>
+                    <textarea name="catatan" class="admin-form-input" rows="4" maxlength="1000" placeholder="Tulis catatan untuk tim admin.">{{ old('catatan', $payment['internal_note']) }}</textarea>
+                </div>
+            </form>
 
             <span class="admin-meta-hint">
-                Catatan ini hanya dapat dilihat oleh tim admin dan disimpan ke audit transaksi.
+                Catatan ini hanya dapat dilihat oleh tim admin dan tidak tampil ke pelanggan.
             </span>
 
             <hr class="divider">
 
             <div class="admin-modal-actions">
                 <button type="button" class="admin-btn-outline" data-close="modal-edit-note">Batal</button>
-                <button type="button" class="admin-btn-primary" onclick="alert('Catatan pembayaran berhasil diperbarui.')">
-                    Simpan catatan
-                </button>
+                <button type="submit" form="form-edit-note" class="admin-btn-primary">Simpan catatan</button>
             </div>
         </div>
     </div>
 
     {{-- FOOTER COPYRIGHT (FIGMA 141:1865) --}}
     <div class="admin-footer-copyright">
-        © 2026 Naro Capture · Data ilustrasi · Akses terbatas admin
+        © {{ date('Y') }} Naro Capture · Akses terbatas admin
     </div>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
+            @if ($errors->has('konfirmasi'))
+                document.getElementById('modal-verify')?.classList.add('is-open');
+            @endif
+            @if ($errors->has('alasan') || $errors->has('pesan'))
+                document.getElementById('modal-request-fix')?.classList.add('is-open');
+            @endif
             const bindModal = (btnId, modalId) => {
                 const btn = document.getElementById(btnId);
                 const modal = document.getElementById(modalId);

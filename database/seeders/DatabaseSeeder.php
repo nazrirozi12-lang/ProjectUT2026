@@ -38,8 +38,8 @@ class DatabaseSeeder extends Seeder
         );
 
         // 2. Packages
-        // Paket Naro Capture (kode PKG-* dipertahankan agar data lama ikut terbarui)
-        $pkgPotret = Package::updateOrCreate(
+        // Paket awal Naro Capture. firstOrCreate: paket yang sudah ada (dan sudah diedit admin di panel) TIDAK ditimpa.
+        $pkgPotret = Package::firstOrCreate(
             ['code' => 'PKG-POTRET'],
             [
                 'slug' => 'birthday-family-photoshoot',
@@ -64,7 +64,7 @@ class DatabaseSeeder extends Seeder
             ]
         );
 
-        $pkgKeluarga = Package::updateOrCreate(
+        $pkgKeluarga = Package::firstOrCreate(
             ['code' => 'PKG-KELUARGA'],
             [
                 'slug' => 'prewedding',
@@ -88,7 +88,7 @@ class DatabaseSeeder extends Seeder
             ]
         );
 
-        $pkgEditorial = Package::updateOrCreate(
+        $pkgEditorial = Package::firstOrCreate(
             ['code' => 'PKG-EDITORIAL'],
             [
                 'slug' => 'graduation',

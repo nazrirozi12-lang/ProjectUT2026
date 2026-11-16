@@ -105,7 +105,7 @@
                             </div>
                             <h2 class="status-main-heading">Bukti pembayaran sedang diperiksa</h2>
                             <p class="body-text">
-                                Bukti Anda sudah diterima. Pembayaran belum terverifikasi dan pemesanan belum dikonfirmasi. Clara akan mengabari Anda melalui email atau WhatsApp setelah peninjauan.
+                                Bukti Anda sudah diterima. Pembayaran belum terverifikasi dan pemesanan belum dikonfirmasi. Tim studio akan mengabari Anda melalui email atau WhatsApp setelah peninjauan.
                             </p>
                         @endif
                     </div>
@@ -270,7 +270,7 @@
                             <div class="detail-row">
                                 <div style="display: flex; flex-direction: column; gap: 4px;">
                                     <span class="detail-label">Panggilan perencanaan</span>
-                                    <p class="body-text font-13" style="color:var(--ink);">Clara akan menghubungi Anda untuk menyepakati alamat rumah dan taman terdekat.</p>
+                                    <p class="body-text font-13" style="color:var(--ink);">Tim studio akan menghubungi Anda untuk menyepakati alamat rumah dan taman terdekat.</p>
                                 </div>
                             </div>
 
@@ -316,7 +316,7 @@
 
                         {{-- Paket Terpilih --}}
                         <div class="mini-package-row">
-                            <img src="{{ asset('images/' . ($data['package_image'] ?? 'paket-2.jpg')) }}" alt="{{ $data['package_name'] }}" class="mini-package-img">
+                            <img src="{{ \App\Support\Media::pkg($data['package_image'] ?? 'paket-2.jpg') }}" alt="{{ $data['package_name'] }}" class="mini-package-img">
                             <div class="mini-package-info">
                                 <span class="eyebrow">PAKET TERPILIH</span>
                                 <h4 class="mini-package-name">{{ $data['package_name'] }}</h4>

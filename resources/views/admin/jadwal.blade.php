@@ -1,396 +1,303 @@
 @extends('layouts.admin')
-
 @section('title', 'Kalender Studio — Naro Capture')
 @section('breadcrumb', 'Jadwal / Kalender studio')
-
 @section('content')
-    {{-- PENGANTAR HALAMAN (FIGMA 141:2454) --}}
+    {{-- PENGANTAR HALAMAN --}}
     <div class="admin-page-header">
         <div class="admin-header-text">
             <h1 class="admin-page-title">Kalender studio</h1>
-            <p class="admin-page-subtitle">Pisahkan ketersediaan, permintaan tentatif, dan sesi yang disetujui. Zona waktu WIB.</p>
+            <p class="admin-page-subtitle">Sesi disetujui, permintaan tentatif, dan blokir studio dari data nyata. Zona waktu WIB.</p>
         </div>
-        <button type="button" class="admin-btn-primary" id="btn-open-add-slot">
-            Tambah slot
-        </button>
+        <button type="button" class="admin-btn-primary" id="btn-open-add-slot">Blokir jadwal</button>
     </div>
 
-    {{-- FILTER & SEARCH BAR (FIGMA 141:2465) --}}
-    <div class="admin-filter-bar">
+    {{-- FILTER & PENCARIAN (berfungsi) --}}
+    <form method="GET" action="{{ route('admin.jadwal') }}" class="admin-filter-bar">
+        <input type="hidden" name="tanggal" value="{{ $detail['date'] ?? '' }}">
         <div class="admin-search-input-wrap">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6E7A8B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="11" cy="11" r="8"></circle>
-                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-            </svg>
-            <input type="text" placeholder="Cari sesi atau pelanggan" class="admin-search-input">
+            <input type="text" name="q" placeholder="Cari sesi, pelanggan, atau kode pesanan (Enter)" class="admin-search-input" value="{{ $search }}">
         </div>
+        <select name="jenis" class="admin-select-dropdown" onchange="this.form.submit()">
+            <option value="semua" @selected($type === 'semua')>Semua jenis</option>
+            <option value="approved" @selected($type === 'approved')>Sesi disetujui</option>
+            <option value="tentative" @selected($type === 'tentative')>Permintaan tentatif</option>
+            <option value="blocked" @selected($type === 'blocked')>Blokir studio</option>
+        </select>
+        <select name="bulan" class="admin-select-dropdown" onchange="this.form.submit()">
+            @foreach ($monthOptions as $m)
+                <option value="{{ $m['value'] }}" @selected($monthValue === $m['value'])>{{ $m['label'] }}</option>
+            @endforeach
+            @if (!collect($monthOptions)->contains('value', $monthValue))
+                <option value="{{ $monthValue }}" selected>{{ $monthTitle }}</option>
+            @endif
+        </select>
+    </form>
 
-        <div class="admin-select-dropdown">
-            <span>Semua jenis slot</span>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#253247" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <polyline points="6 9 12 15 18 9"></polyline>
-            </svg>
-        </div>
-
-        <div class="admin-select-dropdown">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#253247" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-                <line x1="16" y1="2" x2="16" y2="6"></line>
-                <line x1="8" y1="2" x2="8" y2="6"></line>
-                <line x1="3" y1="10" x2="21" y2="10"></line>
-            </svg>
-            <span>Oktober 2026</span>
-        </div>
-    </div>
-
-    {{-- GRID KALENDER: KIRI (KALENDER BULAN) / KANAN (DETAIL TANGGAL DIPILIH) --}}
     <div class="admin-calendar-layout-grid">
-        {{-- KOLOM KIRI: KALENDER INTERAKTIF --}}
+        {{-- KALENDER BULAN --}}
         <div class="admin-panel admin-calendar-main-panel">
-            {{-- NAVIGASI BULAN & PILIHAN TAMPILAN --}}
             <div class="admin-calendar-nav-bar">
-                <h2 class="admin-calendar-month-heading">Oktober 2026</h2>
+                <h2 class="admin-calendar-month-heading">{{ $monthTitle }}</h2>
                 <div class="admin-calendar-nav-actions">
-                    <button type="button" class="admin-btn-outline btn-sm">‹</button>
-                    <button type="button" class="admin-btn-outline btn-sm">Hari ini</button>
-                    <button type="button" class="admin-btn-outline btn-sm">›</button>
+                    <a href="{{ route('admin.jadwal', array_filter(['bulan' => $prevMonth, 'jenis' => $type !== 'semua' ? $type : null, 'q' => $search])) }}" class="admin-btn-outline btn-sm" aria-label="Bulan sebelumnya">‹</a>
+                    <a href="{{ route('admin.jadwal', array_filter(['bulan' => $todayMonth, 'jenis' => $type !== 'semua' ? $type : null, 'q' => $search])) }}" class="admin-btn-outline btn-sm">Hari ini</a>
+                    <a href="{{ route('admin.jadwal', array_filter(['bulan' => $nextMonth, 'jenis' => $type !== 'semua' ? $type : null, 'q' => $search])) }}" class="admin-btn-outline btn-sm" aria-label="Bulan berikutnya">›</a>
                 </div>
             </div>
 
-            {{-- TAB TAMPILAN BULAN / MINGGU --}}
-            <div class="admin-tabs" style="border-bottom: none; margin-bottom: 8px;">
-                <span class="admin-tab-item is-active">Bulan</span>
-                <span class="admin-tab-item">Minggu</span>
-            </div>
-
-            {{-- KEPALA HARI (SEN - MIN) --}}
             <div class="admin-calendar-weekdays">
-                <span>Sen</span>
-                <span>Sel</span>
-                <span>Rab</span>
-                <span>Kam</span>
-                <span>Jum</span>
-                <span>Sab</span>
-                <span>Min</span>
+                <span>Sen</span><span>Sel</span><span>Rab</span><span>Kam</span><span>Jum</span><span>Sab</span><span>Min</span>
             </div>
 
-            {{-- GRID BULAN (7 KOLOM X 5 BARIS) --}}
             <div class="admin-calendar-month-grid">
-                {{-- MINGGU 1 --}}
-                <div class="calendar-day-cell is-muted"><span class="day-num">28</span></div>
-                <div class="calendar-day-cell is-muted"><span class="day-num">29</span></div>
-                <div class="calendar-day-cell is-muted"><span class="day-num">30</span></div>
-                <div class="calendar-day-cell"><span class="day-num">1</span></div>
-                <div class="calendar-day-cell"><span class="day-num">2</span></div>
-                <div class="calendar-day-cell"><span class="day-num">3</span></div>
-                <div class="calendar-day-cell"><span class="day-num">4</span></div>
-
-                {{-- MINGGU 2 --}}
-                <div class="calendar-day-cell"><span class="day-num">5</span></div>
-                <div class="calendar-day-cell"><span class="day-num">6</span></div>
-                <div class="calendar-day-cell"><span class="day-num">7</span></div>
-                <div class="calendar-day-cell"><span class="day-num">8</span></div>
-                <div class="calendar-day-cell"><span class="day-num">9</span></div>
-                <div class="calendar-day-cell">
-                    <span class="day-num">10</span>
-                    <div class="cal-event-pill event-approved">09.00 Nadia<br>Disetujui</div>
-                </div>
-                <div class="calendar-day-cell"><span class="day-num">11</span></div>
-
-                {{-- MINGGU 3 --}}
-                <div class="calendar-day-cell">
-                    <span class="day-num">12</span>
-                    <div class="cal-event-pill event-approved">15.30 Dimas<br>Disetujui</div>
-                </div>
-                <div class="calendar-day-cell"><span class="day-num">13</span></div>
-                <div class="calendar-day-cell"><span class="day-num">14</span></div>
-                <div class="calendar-day-cell">
-                    <span class="day-num">15</span>
-                    <div class="cal-event-pill event-available">09.00–10.30<br>Tersedia</div>
-                </div>
-                <div class="calendar-day-cell"><span class="day-num">16</span></div>
-                <div class="calendar-day-cell is-selected">
-                    <span class="day-num">17</span>
-                    <div class="cal-event-pill event-tentative">15.30 Ayu<br>Tentatif</div>
-                </div>
-                <div class="calendar-day-cell"><span class="day-num">18</span></div>
-
-                {{-- MINGGU 4 --}}
-                <div class="calendar-day-cell"><span class="day-num">19</span></div>
-                <div class="calendar-day-cell">
-                    <span class="day-num">20</span>
-                    <div class="cal-event-pill event-tentative">09.00 Ruang<br>Tentatif</div>
-                </div>
-                <div class="calendar-day-cell">
-                    <span class="day-num">21</span>
-                    <div class="cal-event-pill event-blocked">Blok studio<br>Tidak tersedia</div>
-                </div>
-                <div class="calendar-day-cell"><span class="day-num">22</span></div>
-                <div class="calendar-day-cell"><span class="day-num">23</span></div>
-                <div class="calendar-day-cell">
-                    <span class="day-num">24</span>
-                    <div class="cal-event-pill event-approved">15.30 Maya<br>Disetujui</div>
-                </div>
-                <div class="calendar-day-cell"><span class="day-num">25</span></div>
-
-                {{-- MINGGU 5 --}}
-                <div class="calendar-day-cell"><span class="day-num">26</span></div>
-                <div class="calendar-day-cell"><span class="day-num">27</span></div>
-                <div class="calendar-day-cell"><span class="day-num">28</span></div>
-                <div class="calendar-day-cell"><span class="day-num">29</span></div>
-                <div class="calendar-day-cell"><span class="day-num">30</span></div>
-                <div class="calendar-day-cell"><span class="day-num">31</span></div>
-                <div class="calendar-day-cell is-muted"><span class="day-num">1</span></div>
+                @foreach ($weeks as $cell)
+                    <a href="{{ route('admin.jadwal', array_filter(['bulan' => $monthValue, 'tanggal' => $cell['date'], 'jenis' => $type !== 'semua' ? $type : null, 'q' => $search])) }}"
+                       class="calendar-day-cell {{ $cell['muted'] ? 'is-muted' : '' }} {{ $cell['selected'] ? 'is-selected' : '' }} {{ $cell['today'] ? 'is-today' : '' }}"
+                       style="text-decoration:none; color:inherit; display:block;" aria-label="{{ $cell['date'] }}">
+                        <span class="day-num">{{ $cell['day'] }}</span>
+                        @foreach (array_slice($cell['events'], 0, 2) as $ev)
+                            <div class="cal-event-pill event-{{ $ev['kind'] }}">{{ $ev['text'] }}<br>{{ $ev['sub'] }}</div>
+                        @endforeach
+                        @if (count($cell['events']) > 2)
+                            <div class="cal-event-more">+{{ count($cell['events']) - 2 }} lagi</div>
+                        @endif
+                    </a>
+                @endforeach
             </div>
 
-            {{-- LEGENDA INDIKATOR (FIGMA 141:2522) --}}
             <div class="admin-calendar-legend-bar">
                 <span class="legend-item text-green">● Sesi disetujui</span>
                 <span class="legend-item text-gold">● Permintaan tentatif</span>
-                <span class="legend-item text-blue">● Tersedia</span>
-                <span class="legend-item text-muted">● Blok studio</span>
+                <span class="legend-item text-muted">● Blokir studio</span>
             </div>
         </div>
 
-        {{-- KOLOM KANAN: DETAIL TANGGAL DIPILIH (FIGMA 141:2527) --}}
+        {{-- DETAIL TANGGAL TERPILIH --}}
         <div class="admin-calendar-sidebar-detail">
-            {{-- PANEL SESI TANGGAL 17 OKTOBER --}}
-            <div class="admin-panel">
-                <h3 class="admin-panel-title">Sabtu, 17 Oktober</h3>
-                <span class="status-indicator-item text-blue">● Tanggal dipilih</span>
+            @if ($detail)
+                <div class="admin-panel">
+                    <h3 class="admin-panel-title">{{ $detail['label'] }}</h3>
+                    <span class="status-indicator-item text-blue">● Tanggal dipilih{{ $detail['is_past'] ? ' · sudah lewat' : '' }}</span>
 
-                <div class="admin-selected-session-info">
-                    <strong class="selected-customer-name">Ayu Pramesti</strong>
-                    
-                    <div class="admin-meta-field">
-                        <label class="admin-meta-label">Pesanan / paket</label>
-                        <p class="admin-meta-val font-mono">CH-CONTOH-001 · Cerita Keluarga</p>
-                    </div>
-
-                    <div class="admin-meta-field">
-                        <label class="admin-meta-label">Waktu diminta</label>
-                        <p class="admin-meta-val">15.30–17.00 WIB · 90 menit</p>
-                    </div>
-
-                    <div class="admin-meta-field">
-                        <label class="admin-meta-label">Lokasi</label>
-                        <p class="admin-meta-val">Rumah keluarga, Jakarta Selatan & taman terdekat</p>
-                    </div>
-
-                    <span class="status-indicator-item text-gold">● Tentatif · Belum dikonfirmasi</span>
+                    @forelse ($detail['orders'] as $o)
+                        <div class="admin-selected-session-info" style="{{ !$loop->first ? 'margin-top:14px; padding-top:14px; border-top:1px solid #E6E8E1;' : '' }}">
+                            <strong class="selected-customer-name">{{ $o['customer'] }}</strong>
+                            <div class="admin-meta-field">
+                                <label class="admin-meta-label">Pesanan / paket</label>
+                                <p class="admin-meta-val font-mono">{{ $o['code'] }} · {{ $o['package'] }}</p>
+                            </div>
+                            <div class="admin-meta-field">
+                                <label class="admin-meta-label">Waktu</label>
+                                <p class="admin-meta-val">{{ $o['time'] }}</p>
+                            </div>
+                            <div class="admin-meta-field">
+                                <label class="admin-meta-label">Lokasi</label>
+                                <p class="admin-meta-val">{{ $o['location'] }}</p>
+                            </div>
+                            <span class="status-indicator-item {{ $o['status'] === 'Permintaan' ? 'text-gold' : 'text-green' }}">● {{ $o['status'] === 'Permintaan' ? 'Tentatif · Belum dikonfirmasi' : $o['status'] }} · Pembayaran: {{ $o['payment'] }}</span>
+                            <a href="{{ route('admin.pesanan.detail', ['id' => $o['code']]) }}" class="admin-btn-outline w-full text-center" style="margin-top:8px;">Buka detail pesanan</a>
+                        </div>
+                    @empty
+                        <p class="admin-meta-hint">Belum ada sesi pada tanggal ini.</p>
+                    @endforelse
                 </div>
 
-                {{-- NOTICE TINJAU KETERSEDIAAN (FIGMA 141:2536) --}}
-                <div class="admin-alert-box">
-                    <strong class="admin-alert-title">Tinjau ketersediaan</strong>
-                    <p class="admin-alert-desc">
-                        Bukti pembayaran masih diperiksa. Slot permintaan bukan sesi yang telah disetujui.
-                    </p>
+                <div class="admin-panel">
+                    <h3 class="admin-panel-title">Slot ketersediaan</h3>
+                    @foreach ($detail['slots'] as $slot)
+                        <div class="admin-meta-field">
+                            <label class="admin-meta-label">Mulai {{ $slot['time'] }} WIB</label>
+                            <span class="status-indicator-item {{ $slot['status'] === 'available' ? 'text-blue' : ($slot['status'] === 'full' ? 'text-gold' : 'text-muted') }}">
+                                ● {{ ['available' => 'Tersedia', 'full' => 'Terpesan', 'blocked' => 'Diblokir'][$slot['status']] }}
+                            </span>
+                        </div>
+                    @endforeach
+
+                    @foreach ($detail['blocks'] as $b)
+                        <hr class="divider">
+                        <div class="admin-meta-field">
+                            <label class="admin-meta-label">Blokir studio</label>
+                            <p class="admin-meta-val">{{ $b['label'] }}{{ $b['note'] ? ' · ' . $b['note'] : '' }}</p>
+                        </div>
+                        <div class="admin-btn-group-2">
+                            <button type="button" class="admin-btn-outline flex-1 js-edit-block"
+                                    data-id="{{ $b['id'] }}" data-start="{{ $b['start'] }}" data-end="{{ $b['end'] }}"
+                                    data-whole="{{ $b['whole_day'] ? 1 : 0 }}" data-note="{{ $b['note'] }}" data-label="{{ $detail['label'] }} · {{ $b['label'] }}">Edit</button>
+                            <button type="button" class="admin-btn-outline btn-outline-danger flex-1 js-delete-block"
+                                    data-id="{{ $b['id'] }}" data-label="{{ $detail['label'] }} · {{ $b['label'] }}">Hapus</button>
+                        </div>
+                    @endforeach
+
+                    <hr class="divider">
+                    @if (!$detail['is_past'])
+                        <button type="button" class="admin-btn-outline w-full" id="btn-block-selected" data-date="{{ $detail['date'] }}">Blokir tanggal ini</button>
+                    @endif
+                    <p class="admin-meta-hint">Sesi yang sudah dipesan tidak dihapus oleh blokir; tinjau di halaman Pesanan.</p>
                 </div>
-
-                <a href="{{ route('admin.pesanan.detail', ['id' => 'CH-CONTOH-001']) }}" class="admin-btn-outline w-full text-center">
-                    Buka detail pesanan
-                </a>
-            </div>
-
-            {{-- PANEL SLOT KETERSEDIAAN (FIGMA 141:2543) --}}
-            <div class="admin-panel">
-                <h3 class="admin-panel-title">Slot ketersediaan</h3>
-
-                <div class="admin-meta-field">
-                    <label class="admin-meta-label">Slot belum terpakai</label>
-                    <p class="admin-meta-val">15 Okt 2026 · 09.00–10.30 WIB</p>
+            @else
+                <div class="admin-panel">
+                    <h3 class="admin-panel-title">Pilih tanggal</h3>
+                    <p class="admin-meta-hint">Klik salah satu tanggal pada kalender untuk melihat sesi dan slot hari itu.</p>
                 </div>
-
-                <span class="status-indicator-item text-blue">● Tersedia</span>
-
-                <div class="admin-btn-group-2">
-                    <button type="button" class="admin-btn-outline flex-1" id="btn-open-edit-slot">
-                        Edit
-                    </button>
-                    <button type="button" class="admin-btn-outline btn-outline-danger flex-1" id="btn-open-delete-slot">
-                        Hapus
-                    </button>
-                </div>
-
-                <p class="admin-meta-hint">
-                    Sesi terpesan tidak dapat dihapus sebagai slot kosong.
-                </p>
-            </div>
+            @endif
         </div>
     </div>
 
-    {{-- MODAL DIALOG TAMBAH SLOT / BLOKIR (FIGMA 141:2559) --}}
+    {{-- MODAL BLOKIR JADWAL --}}
     <div class="admin-modal-overlay" id="modal-add-slot">
         <div class="admin-modal-dialog">
             <div class="admin-modal-header">
-                <h3 class="admin-modal-title">Tambah slot waktu</h3>
-                <button type="button" class="admin-btn-close-modal" data-close="modal-add-slot">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#253247" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <line x1="18" y1="6" x2="6" y2="18"></line>
-                        <line x1="6" y1="6" x2="18" y2="18"></line>
-                    </svg>
-                </button>
+                <h3 class="admin-modal-title">Blokir jadwal studio</h3>
+                <button type="button" class="admin-btn-close-modal" data-close="modal-add-slot">×</button>
             </div>
-
-            <p class="admin-modal-subtitle">Buka ketersediaan sesi baru atau blokir studio</p>
-
+            <p class="admin-modal-subtitle">Pelanggan tidak dapat memesan pada waktu yang diblokir (libur, perawatan, acara pribadi).</p>
             <hr class="divider">
-
-            <div class="admin-meta-row-2">
-                <div class="admin-meta-field">
-                    <label class="admin-meta-label">Tanggal *</label>
-                    <input type="date" class="admin-form-input" value="2026-10-18">
+            <form action="{{ route('admin.jadwal.blokir') }}" method="POST" id="form-add-block">
+                @csrf
+                <div class="admin-meta-row-2">
+                    <div class="admin-meta-field">
+                        <label class="admin-meta-label">Tanggal *</label>
+                        <input type="date" name="tanggal" id="add-block-date" class="admin-form-input" required value="{{ old('tanggal', $defaultBlockDate) }}">
+                    </div>
+                    <div class="admin-meta-field">
+                        <label class="admin-meta-label">Cakupan *</label>
+                        <select name="cakupan" id="add-block-scope" class="admin-form-input" required>
+                            <option value="hari" @selected(old('cakupan', 'hari') === 'hari')>Seluruh hari (studio tutup)</option>
+                            <option value="jam" @selected(old('cakupan') === 'jam')>Rentang jam tertentu</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="admin-meta-row-2" id="add-block-times" style="{{ old('cakupan', 'hari') === 'jam' ? '' : 'display:none;' }}">
+                    <div class="admin-meta-field">
+                        <label class="admin-meta-label">Jam mulai *</label>
+                        <input type="time" name="mulai" class="admin-form-input" value="{{ old('mulai', '09:00') }}">
+                    </div>
+                    <div class="admin-meta-field">
+                        <label class="admin-meta-label">Jam selesai *</label>
+                        <input type="time" name="selesai" class="admin-form-input" value="{{ old('selesai', '12:00') }}">
+                    </div>
                 </div>
                 <div class="admin-meta-field">
-                    <label class="admin-meta-label">Jenis slot *</label>
-                    <select class="admin-form-input">
-                        <option selected>Slot Tersedia untuk Pelanggan</option>
-                        <option>Blokir Studio (Libur / Maintenance)</option>
-                    </select>
+                    <label class="admin-meta-label">Catatan internal (opsional)</label>
+                    <input type="text" name="catatan" class="admin-form-input" maxlength="255" placeholder="Contoh: Libur nasional" value="{{ old('catatan') }}">
                 </div>
-            </div>
-
-            <div class="admin-meta-row-2">
-                <div class="admin-meta-field">
-                    <label class="admin-meta-label">Waktu mulai *</label>
-                    <input type="time" class="admin-form-input" value="09:00">
-                </div>
-                <div class="admin-meta-field">
-                    <label class="admin-meta-label">Waktu selesai *</label>
-                    <input type="time" class="admin-form-input" value="10:30">
-                </div>
-            </div>
-
-            <div class="admin-meta-field">
-                <label class="admin-meta-label">Catatan internal (opsional)</label>
-                <input type="text" class="admin-form-input" placeholder="Contoh: Khusus potret studio">
-            </div>
-
+            </form>
             <hr class="divider">
-
             <div class="admin-modal-actions">
                 <button type="button" class="admin-btn-outline" data-close="modal-add-slot">Batal</button>
-                <button type="button" class="admin-btn-primary" onclick="alert('Slot jadwal berhasil ditambahkan.')">
-                    Simpan slot
-                </button>
+                <button type="submit" form="form-add-block" class="admin-btn-primary">Simpan blokir</button>
             </div>
         </div>
     </div>
 
-    {{-- MODAL DIALOG EDIT SLOT (FIGMA 141:2773) --}}
+    {{-- MODAL EDIT BLOKIR --}}
     <div class="admin-modal-overlay" id="modal-edit-slot">
         <div class="admin-modal-dialog">
             <div class="admin-modal-header">
-                <h3 class="admin-modal-title">Edit slot ketersediaan</h3>
-                <button type="button" class="admin-btn-close-modal" data-close="modal-edit-slot">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#253247" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <line x1="18" y1="6" x2="6" y2="18"></line>
-                        <line x1="6" y1="6" x2="18" y2="18"></line>
-                    </svg>
-                </button>
+                <h3 class="admin-modal-title">Edit blokir jadwal</h3>
+                <button type="button" class="admin-btn-close-modal" data-close="modal-edit-slot">×</button>
             </div>
-
-            <p class="admin-modal-subtitle">15 Okt 2026 · 09.00–10.30 WIB</p>
-
+            <p class="admin-modal-subtitle" id="edit-block-label"></p>
             <hr class="divider">
-
-            <div class="admin-meta-row-2">
+            <form method="POST" id="form-edit-block">
+                @csrf
+                @method('PUT')
                 <div class="admin-meta-field">
-                    <label class="admin-meta-label">Waktu mulai</label>
-                    <input type="time" class="admin-form-input" value="09:00">
+                    <label class="admin-meta-label">Cakupan</label>
+                    <select name="cakupan" id="edit-block-scope" class="admin-form-input">
+                        <option value="hari">Seluruh hari (studio tutup)</option>
+                        <option value="jam">Rentang jam tertentu</option>
+                    </select>
+                </div>
+                <div class="admin-meta-row-2" id="edit-block-times">
+                    <div class="admin-meta-field">
+                        <label class="admin-meta-label">Jam mulai</label>
+                        <input type="time" name="mulai" id="edit-block-start" class="admin-form-input">
+                    </div>
+                    <div class="admin-meta-field">
+                        <label class="admin-meta-label">Jam selesai</label>
+                        <input type="time" name="selesai" id="edit-block-end" class="admin-form-input">
+                    </div>
                 </div>
                 <div class="admin-meta-field">
-                    <label class="admin-meta-label">Waktu selesai</label>
-                    <input type="time" class="admin-form-input" value="10:30">
+                    <label class="admin-meta-label">Catatan internal</label>
+                    <input type="text" name="catatan" id="edit-block-note" class="admin-form-input" maxlength="255">
                 </div>
-            </div>
-
-            <div class="admin-meta-field">
-                <label class="admin-meta-label">Status ketersediaan</label>
-                <select class="admin-form-input">
-                    <option selected>Tersedia</option>
-                    <option>Blokir Studio</option>
-                </select>
-            </div>
-
+            </form>
             <hr class="divider">
-
             <div class="admin-modal-actions">
                 <button type="button" class="admin-btn-outline" data-close="modal-edit-slot">Batal</button>
-                <button type="button" class="admin-btn-primary" onclick="alert('Perubahan slot berhasil disimpan.')">
-                    Simpan perubahan
-                </button>
+                <button type="submit" form="form-edit-block" class="admin-btn-primary">Simpan perubahan</button>
             </div>
         </div>
     </div>
 
-    {{-- MODAL DIALOG HAPUS SLOT (FIGMA 141:2928) --}}
+    {{-- MODAL HAPUS BLOKIR --}}
     <div class="admin-modal-overlay" id="modal-delete-slot">
         <div class="admin-modal-dialog">
             <div class="admin-modal-header">
-                <h3 class="admin-modal-title">Hapus slot ketersediaan?</h3>
-                <button type="button" class="admin-btn-close-modal" data-close="modal-delete-slot">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#253247" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <line x1="18" y1="6" x2="6" y2="18"></line>
-                        <line x1="6" y1="6" x2="18" y2="18"></line>
-                    </svg>
-                </button>
+                <h3 class="admin-modal-title">Hapus blokir jadwal?</h3>
+                <button type="button" class="admin-btn-close-modal" data-close="modal-delete-slot">×</button>
             </div>
-
-            <p class="admin-modal-subtitle">15 Okt 2026 · 09.00–10.30 WIB · Tersedia</p>
-
+            <p class="admin-modal-subtitle" id="delete-block-label"></p>
             <hr class="divider">
-
-            <p class="admin-meta-val">
-                Slot waktu ini akan dihapus dari pilihan jadwal yang dapat dipilih pelanggan saat pemesanan baru.
-            </p>
-
-            <div class="admin-alert-box alert-warning-box">
-                <strong class="admin-alert-title text-gold">Tidak mempengaruhi sesi terpesan</strong>
-                <p class="admin-alert-desc text-gold">
-                    Slot ini belum terikat dengan pesanan mana pun.
-                </p>
-            </div>
-
+            <p class="admin-meta-val">Slot pada waktu ini akan kembali dapat dipesan pelanggan.</p>
             <hr class="divider">
-
-            <div class="admin-modal-actions">
+            <form method="POST" id="form-delete-block" class="admin-modal-actions">
+                @csrf
+                @method('DELETE')
                 <button type="button" class="admin-btn-outline" data-close="modal-delete-slot">Batal</button>
-                <button type="button" class="admin-btn-primary" style="background:#D32F2F; border-color:#D32F2F;" onclick="alert('Slot berhasil dihapus.')">
-                    Hapus slot
-                </button>
-            </div>
+                <button type="submit" class="admin-btn-primary" style="background:#D32F2F; border-color:#D32F2F;">Hapus blokir</button>
+            </form>
         </div>
     </div>
 
-    {{-- FOOTER COPYRIGHT (FIGMA 141:2557) --}}
     <div class="admin-footer-copyright">
-        © 2026 Naro Capture · Data ilustrasi · Akses terbatas admin
+        © {{ date('Y') }} Naro Capture · Akses terbatas admin
     </div>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            const bindModal = (btnId, modalId) => {
-                const btn = document.getElementById(btnId);
-                const modal = document.getElementById(modalId);
-                if (btn && modal) {
-                    btn.addEventListener('click', () => modal.classList.add('is-open'));
-                }
-            };
+            const open = id => document.getElementById(id).classList.add('is-open');
+            const baseUrl = @json(url('/admin/jadwal/blokir'));
 
-            bindModal('btn-open-add-slot', 'modal-add-slot');
-            bindModal('btn-open-edit-slot', 'modal-edit-slot');
-            bindModal('btn-open-delete-slot', 'modal-delete-slot');
-
-            document.querySelectorAll('[data-close]').forEach(b => {
-                b.addEventListener('click', () => {
-                    const id = b.getAttribute('data-close');
-                    const m = document.getElementById(id);
-                    if (m) m.classList.remove('is-open');
-                });
+            document.getElementById('btn-open-add-slot').addEventListener('click', () => open('modal-add-slot'));
+            const blockSel = document.getElementById('btn-block-selected');
+            if (blockSel) blockSel.addEventListener('click', () => {
+                document.getElementById('add-block-date').value = blockSel.dataset.date;
+                open('modal-add-slot');
             });
+
+            const toggleTimes = (scopeEl, timesEl) => { timesEl.style.display = scopeEl.value === 'jam' ? '' : 'none'; };
+            const addScope = document.getElementById('add-block-scope'), addTimes = document.getElementById('add-block-times');
+            addScope.addEventListener('change', () => toggleTimes(addScope, addTimes));
+            const editScope = document.getElementById('edit-block-scope'), editTimes = document.getElementById('edit-block-times');
+            editScope.addEventListener('change', () => toggleTimes(editScope, editTimes));
+
+            document.querySelectorAll('.js-edit-block').forEach(b => b.addEventListener('click', () => {
+                document.getElementById('form-edit-block').action = baseUrl + '/' + b.dataset.id;
+                document.getElementById('edit-block-label').textContent = b.dataset.label;
+                editScope.value = b.dataset.whole === '1' ? 'hari' : 'jam';
+                document.getElementById('edit-block-start').value = b.dataset.whole === '1' ? '09:00' : b.dataset.start;
+                document.getElementById('edit-block-end').value = b.dataset.whole === '1' ? '12:00' : b.dataset.end;
+                document.getElementById('edit-block-note').value = b.dataset.note || '';
+                toggleTimes(editScope, editTimes);
+                open('modal-edit-slot');
+            }));
+            document.querySelectorAll('.js-delete-block').forEach(b => b.addEventListener('click', () => {
+                document.getElementById('form-delete-block').action = baseUrl + '/' + b.dataset.id;
+                document.getElementById('delete-block-label').textContent = b.dataset.label;
+                open('modal-delete-slot');
+            }));
+
+            document.querySelectorAll('[data-close]').forEach(b => b.addEventListener('click', () => {
+                const m = document.getElementById(b.getAttribute('data-close'));
+                if (m) m.classList.remove('is-open');
+            }));
+
+            @if ($errors->has('tanggal') || $errors->has('cakupan') || $errors->has('mulai') || $errors->has('selesai'))
+                open('modal-add-slot');
+            @endif
         });
     </script>
 @endsection
-

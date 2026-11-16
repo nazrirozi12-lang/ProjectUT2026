@@ -3,7 +3,13 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\BookingController;
 use App\Http\Controllers\OrderTrackingController;
+use App\Http\Controllers\AdminCustomerController;
+use App\Http\Controllers\AdminDashboardController;
+use App\Http\Controllers\AdminGalleryController;
 use App\Http\Controllers\AdminOrderController;
+use App\Http\Controllers\AdminPackageController;
+use App\Http\Controllers\AdminScheduleController;
+use App\Http\Controllers\AdminSettingsController;
 use App\Http\Controllers\AdminPaymentController;
 use App\Http\Controllers\AuthController;
 use App\Models\Package;
@@ -34,16 +40,10 @@ Route::get('/', function () {
     // Ambil dari database dengan fallback
     $dbPackages = Package::where('is_active', true)->get();
     if ($dbPackages->isNotEmpty()) {
-        $imageMap = [
-            'birthday-family-photoshoot' => 'paket-1.jpg',
-            'prewedding' => 'paket-2.jpg',
-            'graduation' => 'paket-3.jpg',
-        ];
-
-        $packages = $dbPackages->map(function ($pkg) use ($imageMap) {
+        $packages = $dbPackages->map(function ($pkg) {
             return [
                 'id' => $pkg->slug,
-                'image' => $imageMap[$pkg->slug] ?? 'paket-1.jpg',
+                'image' => $pkg->imageSource(),
                 'featured' => (bool)$pkg->is_featured,
                 'label' => '',
                 'name' => $pkg->name,
@@ -97,6 +97,7 @@ Route::get('/', function () {
 // Pemesanan & Alur Checkout
 Route::get('/pemesanan', [BookingController::class, 'create'])->name('pemesanan');
 Route::post('/pemesanan', [BookingController::class, 'store'])->name('pemesanan.store');
+Route::get('/media/paket/{slug}', [AdminPackageController::class, 'image'])->name('package.image');
 
 Route::get('/checkout', [BookingController::class, 'checkout'])->name('checkout');
 
@@ -141,13 +142,13 @@ Route::prefix('admin')->group(function () {
             return redirect()->route('admin.dashboard');
         });
 
-        Route::get('/dashboard', function () {
-            return view('admin.dashboard');
-        })->name('admin.dashboard');
+        Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('admin.dashboard');
 
         // Pesanan
         Route::get('/pesanan', [AdminOrderController::class, 'index'])->name('admin.pesanan');
         Route::get('/pesanan/{id}', [AdminOrderController::class, 'show'])->name('admin.pesanan.detail');
+        Route::put('/pesanan/{id}', [AdminOrderController::class, 'update'])->name('admin.pesanan.update');
+        Route::post('/pesanan/{id}/selesai-sesi', [AdminOrderController::class, 'selesaikanSesi'])->name('admin.pesanan.selesai-sesi');
         Route::post('/pesanan/{id}/konfirmasi-sesi', [AdminOrderController::class, 'konfirmasiSesi'])->name('admin.pesanan.konfirmasi-sesi');
         Route::post('/pesanan/{id}/batalkan-sesi', [AdminOrderController::class, 'batalkanSesi'])->name('admin.pesanan.batalkan-sesi');
         Route::post('/pesanan/{id}/arsipkan-sesi', [AdminOrderController::class, 'arsipkanSesi'])->name('admin.pesanan.arsipkan-sesi');
@@ -156,165 +157,40 @@ Route::prefix('admin')->group(function () {
         Route::get('/pembayaran', [AdminPaymentController::class, 'index'])->name('admin.pembayaran');
         Route::get('/pembayaran/{id}', [AdminPaymentController::class, 'show'])->name('admin.pembayaran.detail');
         Route::get('/pembayaran/{id}/bukti', [AdminPaymentController::class, 'bukti'])->name('admin.pembayaran.bukti');
+        Route::post('/pembayaran/manual', [AdminPaymentController::class, 'catatManual'])->name('admin.pembayaran.manual');
+        Route::post('/pembayaran/{id}/catatan', [AdminPaymentController::class, 'simpanCatatan'])->name('admin.pembayaran.catatan');
         Route::post('/pembayaran/{id}/verifikasi', [AdminPaymentController::class, 'verifikasi'])->name('admin.pembayaran.verifikasi-action');
         Route::post('/pembayaran/{id}/minta-perbaikan', [AdminPaymentController::class, 'mintaPerbaikan'])->name('admin.pembayaran.minta-perbaikan');
 
         // Jadwal
-        Route::get('/jadwal', function () {
-            return view('admin.jadwal');
-        })->name('admin.jadwal');
+        Route::get('/jadwal', [AdminScheduleController::class, 'index'])->name('admin.jadwal');
+        Route::post('/jadwal/blokir', [AdminScheduleController::class, 'storeBlock'])->name('admin.jadwal.blokir');
+        Route::put('/jadwal/blokir/{id}', [AdminScheduleController::class, 'updateBlock'])->name('admin.jadwal.blokir.update');
+        Route::delete('/jadwal/blokir/{id}', [AdminScheduleController::class, 'destroyBlock'])->name('admin.jadwal.blokir.hapus');
 
         // Pelanggan
-        Route::get('/pelanggan', function () {
-            $activeTab = request('tab', 'aktif');
-
-            $customers = \App\Models\Customer::with('orders')->latest()->get()->map(function ($c) {
-                $orderCount = $c->orders->count();
-                return [
-                    'name' => $c->name,
-                    'id' => $c->customer_code,
-                    'email' => $c->email,
-                    'whatsapp' => $c->whatsapp,
-                    'history' => $orderCount . ' pesanan',
-                    'status' => ucfirst($c->status),
-                ];
-            })->toArray();
-
-            if (empty($customers)) {
-                $customers = [
-                    [
-                        'name' => 'Ayu Pramesti',
-                        'id' => 'PLG-CONTOH-001',
-                        'email' => 'ayu.pramesti@example.com',
-                        'whatsapp' => '+62 8•• •••• 7890',
-                        'history' => '1 pesanan aktif',
-                        'status' => 'Aktif',
-                    ],
-                    [
-                        'name' => 'Budi Santoso & Keluarga',
-                        'id' => 'PLG-CONTOH-002',
-                        'email' => 'budi.santoso@example.com',
-                        'whatsapp' => '+62 8•• •••• 5432',
-                        'history' => '1 sesi aktif',
-                        'status' => 'Aktif',
-                    ],
-                ];
-            }
-
-            return view('admin.pelanggan', compact('customers', 'activeTab'));
-        })->name('admin.pelanggan');
+        Route::get('/pelanggan', [AdminCustomerController::class, 'index'])->name('admin.pelanggan');
+        Route::post('/pelanggan', [AdminCustomerController::class, 'store'])->name('admin.pelanggan.simpan');
+        Route::get('/pelanggan/{id}', [AdminCustomerController::class, 'show'])->name('admin.pelanggan.detail');
+        Route::put('/pelanggan/{id}', [AdminCustomerController::class, 'update'])->name('admin.pelanggan.update');
+        Route::post('/pelanggan/{id}/arsipkan', [AdminCustomerController::class, 'arsipkan'])->name('admin.pelanggan.arsipkan');
+        Route::post('/pelanggan/{id}/aktifkan', [AdminCustomerController::class, 'aktifkan'])->name('admin.pelanggan.aktifkan');
 
         // Paket
-        Route::get('/paket', function () {
-            return view('admin.paket');
-        })->name('admin.paket');
+        Route::get('/paket', [AdminPackageController::class, 'index'])->name('admin.paket');
+        Route::post('/paket', [AdminPackageController::class, 'store'])->name('admin.paket.simpan');
+        Route::put('/paket/{id}', [AdminPackageController::class, 'update'])->name('admin.paket.update');
+        Route::post('/paket/{id}/toggle', [AdminPackageController::class, 'toggle'])->name('admin.paket.toggle');
+        Route::delete('/paket/{id}', [AdminPackageController::class, 'destroy'])->name('admin.paket.hapus');
 
         // Galeri
-        Route::get('/galeri', function () {
-            $activeTab = request('tab', 'semua');
-
-            $allGalleries = [
-                [
-                    'title' => 'Family Photoshoot Ayu',
-                    'order_code' => 'CH-CONTOH-001',
-                    'owner' => 'Ayu Pramesti',
-                    'photos' => '6 / 50',
-                    'note' => 'Sampel ilustrasi',
-                    'status' => 'Penyuntingan',
-                    'access' => 'Privat',
-                    'action' => 'Detail →',
-                ],
-                [
-                    'title' => 'Potret Nadia',
-                    'order_code' => 'CH-CONTOH-002',
-                    'owner' => 'Nadia Putri',
-                    'photos' => '0 / 20',
-                    'note' => '',
-                    'status' => 'Draf',
-                    'access' => 'Belum aktif',
-                    'action' => 'Edit →',
-                ],
-                [
-                    'title' => 'Cerita Dimas & Rani',
-                    'order_code' => 'CH-CONTOH-003',
-                    'owner' => 'Dimas & Rani',
-                    'photos' => '18 / 50',
-                    'note' => '',
-                    'status' => 'Penyuntingan',
-                    'access' => 'Privat',
-                    'action' => 'Detail →',
-                ],
-                [
-                    'title' => 'Editorial Ruang Reka',
-                    'order_code' => 'CH-CONTOH-004',
-                    'owner' => 'Ruang Reka',
-                    'photos' => '0 / 80',
-                    'note' => '',
-                    'status' => 'Draf',
-                    'access' => 'Belum aktif',
-                    'action' => 'Edit →',
-                ],
-                [
-                    'title' => 'Potret Sinta',
-                    'order_code' => 'CH-CONTOH-005',
-                    'owner' => 'Sinta Lestari',
-                    'photos' => '0 / 20',
-                    'note' => '',
-                    'status' => 'Draf',
-                    'access' => 'Belum aktif',
-                    'action' => 'Edit →',
-                ],
-                [
-                    'title' => 'Cerita Maya Sari',
-                    'order_code' => 'CH-CONTOH-006',
-                    'owner' => 'Maya Sari',
-                    'photos' => '42 / 50',
-                    'note' => '',
-                    'status' => 'Siap',
-                    'access' => 'Privat',
-                    'action' => 'Pratinjau →',
-                ],
-                [
-                    'title' => 'Potret Laras',
-                    'order_code' => 'CH-CONTOH-007',
-                    'owner' => 'Laras Dewi',
-                    'photos' => '20 / 20',
-                    'note' => 'Klien telah mengunduh zip',
-                    'status' => 'Diterbitkan',
-                    'access' => 'Terbuka',
-                    'action' => 'Buka link ↗',
-                ],
-                [
-                    'title' => 'Cerita Bima & Citra',
-                    'order_code' => 'CH-CONTOH-008',
-                    'owner' => 'Bima Aditya',
-                    'photos' => '50 / 50',
-                    'note' => 'Masa aktif s/d Des 2026',
-                    'status' => 'Diterbitkan',
-                    'access' => 'Privat',
-                    'action' => 'Buka link ↗',
-                ],
-            ];
-
-            $galleries = match ($activeTab) {
-                'draf' => array_filter($allGalleries, fn($g) => $g['status'] === 'Draf'),
-                'penyuntingan' => array_filter($allGalleries, fn($g) => $g['status'] === 'Penyuntingan'),
-                'siap' => array_filter($allGalleries, fn($g) => $g['status'] === 'Siap'),
-                'diterbitkan' => array_filter($allGalleries, fn($g) => $g['status'] === 'Diterbitkan'),
-                default => $allGalleries,
-            };
-
-            return view('admin.galeri', compact('galleries', 'activeTab'));
-        })->name('admin.galeri');
+        Route::get('/galeri', [AdminGalleryController::class, 'index'])->name('admin.galeri');
+        Route::post('/galeri', [AdminGalleryController::class, 'store'])->name('admin.galeri.simpan');
+        Route::put('/galeri/{id}', [AdminGalleryController::class, 'update'])->name('admin.galeri.update');
+        Route::delete('/galeri/{id}', [AdminGalleryController::class, 'destroy'])->name('admin.galeri.hapus');
 
         // Pengaturan
-        Route::get('/pengaturan', function () {
-            return view('admin.pengaturan');
-        })->name('admin.pengaturan');
-
-        Route::post('/pengaturan', function () {
-            return redirect()->route('admin.pengaturan')
-                ->with('success', 'Pengaturan studio berhasil disimpan.');
-        })->name('admin.pengaturan.save');
+        Route::get('/pengaturan', [AdminSettingsController::class, 'index'])->name('admin.pengaturan');
+        Route::post('/pengaturan', [AdminSettingsController::class, 'save'])->name('admin.pengaturan.save');
     });
 });

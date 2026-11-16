@@ -20,7 +20,15 @@
                 <h1 class="checkout-header__title">Ringkasan &amp; invoice.</h1>
             </div>
             <p class="body-text checkout-header__desc">
-                Periksa kembali detail sesi dan invoice Anda, lalu pilih metode pembayaran. Sesi Anda belum dikonfirmasi.
+                @if ($live['session_status'] === 'Dikonfirmasi')
+                    Sesi Anda sudah dikonfirmasi oleh studio. Simpan kode pesanan untuk mengecek status kapan saja.
+                @elseif ($live['payment_status'] === 'Terverifikasi')
+                    Pembayaran Anda sudah terverifikasi. Studio akan segera mengonfirmasi jadwal sesi Anda.
+                @elseif ($live['payment_status'] === 'Bukti terkirim')
+                    Bukti pembayaran Anda sudah diterima dan sedang diperiksa studio. Sesi Anda belum dikonfirmasi.
+                @else
+                    Periksa kembali detail sesi dan invoice Anda, lalu pilih metode pembayaran. Sesi Anda belum dikonfirmasi.
+                @endif
             </p>
         </div>
 
@@ -51,13 +59,13 @@
         <div class="checkout-box summary-card">
             <div class="checkout-card-header">
                 <h2 class="card-title">Sesi yang Anda rencanakan</h2>
-                <span class="status-badge">Menunggu konfirmasi</span>
+                <span class="status-badge">{{ $live['session_badge'] }}</span>
             </div>
 
             {{-- Kartu Paket Terpilih --}}
             <div class="chosen-package-card">
                 <div class="chosen-package__img">
-                    <img src="{{ asset('images/' . $data['package_image']) }}" alt="{{ $data['package_name'] }}">
+                    <img src="{{ \App\Support\Media::pkg($data['package_image']) }}" alt="{{ $data['package_name'] }}">
                 </div>
                 <div class="chosen-package__info">
                     <span class="eyebrow-small">PAKET TERPILIH</span>
@@ -138,7 +146,7 @@
 
                 @if(!empty($data['catatan']))
                     <div class="info-group">
-                        <span class="detail-label">Catatan untuk Clara</span>
+                        <span class="detail-label">Catatan untuk studio</span>
                         <p class="body-text">{{ $data['catatan'] }}</p>
                     </div>
                 @endif
@@ -147,7 +155,11 @@
             {{-- Info Notice Box --}}
             <div class="summary-notice">
                 <img src="{{ asset('images/icon-info.svg') }}" alt="" class="notice-icon">
-                <p>Sesi ini masih berupa permintaan jadwal. Clara akan meninjau ketersediaan dan menghubungi Anda melalui email atau WhatsApp sebelum mengonfirmasi sesi.</p>
+                @if ($live['session_status'] === 'Dikonfirmasi')
+                    <p>Jadwal sesi ini sudah dikonfirmasi oleh studio. Sampai jumpa di hari sesi!</p>
+                @else
+                    <p>Sesi ini masih berupa permintaan jadwal. Tim studio akan meninjau ketersediaan dan menghubungi Anda melalui email atau WhatsApp sebelum mengonfirmasi sesi.</p>
+                @endif
             </div>
 
             <div class="card-footer-link">
@@ -161,11 +173,11 @@
         <div class="checkout-box invoice-card">
             <div class="checkout-card-header">
                 <h2 class="card-title">Invoice</h2>
-                <span class="status-badge">Draf · Belum dibayar</span>
+                <span class="status-badge">{{ $live['payment_badge'] }}</span>
             </div>
 
             <div class="invoice-meta">
-                <span class="invoice-number">Nomor contoh: {{ $data['invoice_number'] }}</span>
+                <span class="invoice-number">Nomor invoice: {{ $data['invoice_number'] }}</span>
                 <strong class="studio-name">Naro Capture</strong>
                 <span class="studio-email">narocapture@gmail.com</span>
             </div>
@@ -215,12 +227,42 @@
                 <span class="total-note">Dalam rupiah (IDR) · sesuai harga paket</span>
             </div>
 
-            <button type="button" class="btn btn--outline btn--block" onclick="alert('Draf invoice telah diunduh!')">
-                Unduh draf invoice @include('partials.arrow')
+            <button type="button" class="btn btn--outline btn--block" onclick="window.print()">
+                Cetak / simpan invoice @include('partials.arrow')
             </button>
 
             <hr class="divider">
 
+            {{-- Status pembayaran nyata dari database --}}
+            @if (!$live['can_pay'])
+                <div class="summary-notice" style="margin-bottom: 16px;">
+                    <img src="{{ asset('images/icon-info.svg') }}" alt="" class="notice-icon">
+                    <p>
+                        @if ($live['payment_status'] === 'Terverifikasi')
+                            <strong>Pembayaran terverifikasi.</strong>
+                            @if ($live['paid_nominal']) Nominal {{ $live['paid_nominal'] }}@if ($live['paid_date']) · transfer {{ $live['paid_date'] }}@endif. @endif
+                            Terima kasih, pembayaran Anda sudah kami terima.
+                        @elseif ($live['payment_status'] === 'Bukti terkirim')
+                            <strong>Bukti pembayaran sudah dikirim.</strong>
+                            @if ($live['paid_nominal']) Nominal {{ $live['paid_nominal'] }}@if ($live['paid_date']) · transfer {{ $live['paid_date'] }}@endif. @endif
+                            Studio sedang memeriksa bukti Anda.
+                        @elseif ($live['session_status'] === 'Dibatalkan')
+                            <strong>Pesanan ini dibatalkan.</strong> Silakan buat pemesanan baru bila ingin menjadwalkan sesi.
+                        @else
+                            Status pembayaran: {{ $live['payment_badge'] }}.
+                        @endif
+                    </p>
+                </div>
+                <a href="{{ route('cek-pesanan', ['kode' => $data['order_code'], 'kontak' => $data['email']]) }}" class="btn btn--fill btn--block btn--lg">
+                    Lihat status pesanan @include('partials.arrow')
+                </a>
+            @else
+                @if ($live['payment_status'] === 'Perlu perbaikan')
+                    <div class="summary-notice" style="margin-bottom: 16px;">
+                        <img src="{{ asset('images/icon-info.svg') }}" alt="" class="notice-icon">
+                        <p><strong>Bukti pembayaran perlu diperbaiki.</strong> {{ $live['review_note'] ?: 'Silakan unggah ulang bukti transfer yang jelas dan sesuai nominal.' }}</p>
+                    </div>
+                @endif
             <form action="{{ route('konfirmasi') }}" method="GET" id="paymentMethodForm">
                 {{-- Pilihan Metode Pembayaran --}}
                 <div class="payment-method-section">
@@ -252,8 +294,16 @@
                 </button>
             </form>
 
+            @endif
+
             <p class="payment-disclaimer">
-                Belum ada pembayaran yang diterima. Pembayaran tidak otomatis mengonfirmasi jadwal; konfirmasi sesi tetap diberikan oleh studio.
+                @if ($live['payment_status'] === 'Terverifikasi')
+                    Pembayaran sudah terverifikasi. Konfirmasi jadwal sesi tetap diberikan oleh studio.
+                @elseif ($live['payment_status'] === 'Bukti terkirim')
+                    Pembayaran belum dinyatakan lunas sebelum bukti diverifikasi studio. Pantau melalui status pesanan.
+                @else
+                    Belum ada pembayaran yang diterima. Pembayaran tidak otomatis mengonfirmasi jadwal; konfirmasi sesi tetap diberikan oleh studio.
+                @endif
             </p>
         </div>
     </div>

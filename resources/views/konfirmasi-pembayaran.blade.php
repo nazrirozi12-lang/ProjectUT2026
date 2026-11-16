@@ -145,7 +145,7 @@
                         Lihat Status Pesanan @include('partials.arrow')
                     </a>
                     <p class="proof-footer-note">
-                        Clara akan memberi kabar melalui email atau WhatsApp setelah pemeriksaan bukti dan jadwal.
+                        Tim studio akan memberi kabar melalui email atau WhatsApp setelah pemeriksaan bukti dan jadwal.
                     </p>
                 </div>
             </div>
@@ -373,7 +373,7 @@
                         <img src="{{ asset('images/icon-info.svg') }}" alt="" class="notice-icon">
                         <div>
                             <strong class="notice-title">Pembayaran akan ditinjau oleh studio</strong>
-                            <p>Mengunggah struk tidak otomatis mengonfirmasi pembayaran atau pemesanan. Clara akan memeriksa bukti dan ketersediaan jadwal, lalu menghubungi Anda melalui email atau WhatsApp.</p>
+                            <p>Mengunggah struk tidak otomatis mengonfirmasi pembayaran atau pemesanan. Tim studio akan memeriksa bukti dan ketersediaan jadwal, lalu menghubungi Anda melalui email atau WhatsApp.</p>
                         </div>
                     </div>
 
@@ -446,7 +446,7 @@
 
                 {{-- Paket Terpilih Mini --}}
                 <div class="mini-package-row">
-                    <img src="{{ asset('images/' . $data['package_image']) }}" alt="{{ $data['package_name'] }}" class="mini-package-img">
+                    <img src="{{ \App\Support\Media::pkg($data['package_image']) }}" alt="{{ $data['package_name'] }}" class="mini-package-img">
                     <div class="mini-package-info">
                         <span class="eyebrow-small">PAKET TERPILIH</span>
                         <strong class="mini-package-name">{{ $data['package_name'] }}</strong>

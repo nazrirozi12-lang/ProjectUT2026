@@ -4019,3 +4019,42 @@ body:has(.gallery-page) .brand__logo--dark { display: block; }
 /* ===== Catatan paket (mis. "Di luar transport") ===== */
 .package__note { font-size: 12px; color: var(--muted); margin: -4px 0 4px; font-style: italic; }
 .pkg-card__note { font-size: 11px; color: var(--muted); margin: 8px 0 0; font-style: italic; }
+
+/* ===== Notifikasi (toast) ===== */
+.toast-stack { position: fixed; top: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; width: min(380px, calc(100vw - 40px)); }
+.toast { display: flex; align-items: flex-start; gap: 12px; padding: 14px 16px; border-radius: 8px; background: #fff; border: 1px solid var(--line); border-left-width: 4px; box-shadow: 0 8px 24px rgba(37, 41, 35, .14); animation: toast-in .25s ease-out; }
+.toast.is-leaving { opacity: 0; transform: translateX(16px); transition: all .25s ease; }
+.toast__icon { flex: 0 0 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font-size: 12px; font-weight: 700; color: #fff; margin-top: 1px; }
+.toast__body { flex: 1; min-width: 0; }
+.toast__title { display: block; font-size: 13px; font-weight: 600; color: var(--ink); }
+.toast__msg { font-size: 13px; line-height: 1.5; color: var(--muted); margin-top: 2px; word-break: break-word; }
+.toast__close { background: none; border: 0; font-size: 20px; line-height: 1; color: var(--muted); cursor: pointer; padding: 0 2px; }
+.toast--success { border-left-color: #2E7D32; } .toast--success .toast__icon { background: #2E7D32; }
+.toast--error { border-left-color: #D32F2F; } .toast--error .toast__icon { background: #D32F2F; }
+.toast--warning { border-left-color: #B7791F; } .toast--warning .toast__icon { background: #B7791F; }
+.toast--info { border-left-color: var(--blue); } .toast--info .toast__icon { background: var(--blue); }
+@keyframes toast-in { from { opacity: 0; transform: translateX(16px); } to { opacity: 1; transform: none; } }
+
+/* ===== Paket layanan: geser (swipe) bila lebih dari 3 kartu ===== */
+.packages-slider__nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+.packages-slider__hint { font-size: 12px; color: var(--muted); }
+.packages-slider__btns { display: flex; gap: 8px; }
+.packages-slider__btn { width: 36px; height: 36px; border-radius: 50%; border: 1px solid var(--line); background: #fff; font-size: 20px; line-height: 1; cursor: pointer; color: var(--ink); }
+.packages-slider__btn:hover { border-color: var(--blue); color: var(--blue); }
+.packages.packages--scroll { overflow-x: auto; scroll-snap-type: x mandatory; scroll-behavior: smooth; -webkit-overflow-scrolling: touch; padding-bottom: 16px; flex-direction: row; }
+.packages.packages--scroll > .package { flex: 0 0 calc((100% - 48px) / 3); min-width: 300px; scroll-snap-align: start; }
+@media (max-width: 900px) {
+    .packages.packages--scroll { flex-direction: row; }
+    .packages.packages--scroll > .package { flex: 0 0 85%; min-width: 0; }
+}
+
+/* ===== Linimasa pesanan: status perlu perbaikan / batal ===== */
+.timeline-step.is-warn .timeline-circle { color: #B7791F; border-color: #B7791F; }
+.timeline-step.is-warn .timeline-text span { color: #B7791F; }
+.timeline-step.is-cancelled .timeline-circle { color: #D32F2F; border-color: #D32F2F; }
+.timeline-step.is-cancelled .timeline-text strong { color: #D32F2F; }
+
+/* ===== Kalender admin: hari ini & penanda tambahan ===== */
+.calendar-day-cell.is-today .day-num { background: var(--blue); color: #fff; border-radius: 50%; width: 24px; height: 24px; display: inline-grid; place-items: center; }
+.cal-event-more { font-size: 11px; color: var(--muted); margin-top: 2px; }
+a.calendar-day-cell:hover { background: #F4F5F0; }

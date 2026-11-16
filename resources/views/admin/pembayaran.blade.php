@@ -15,92 +15,73 @@
         </button>
     </div>
 
-    {{-- 4 KARTU METRIK PEMBAYARAN (FIGMA 141:1712) --}}
+    {{-- 4 KARTU METRIK PEMBAYARAN (data nyata) --}}
     <div class="admin-metrics-grid">
         <div class="admin-panel admin-payment-metric-card">
             <span class="payment-metric-label">Bukti menunggu</span>
-            <strong class="payment-metric-val">3</strong>
-            <span class="payment-metric-sub">Rp23.500.000 diajukan</span>
+            <strong class="payment-metric-val">{{ $metrics['waiting']['count'] }}</strong>
+            <span class="payment-metric-sub">Rp{{ number_format($metrics['waiting']['sum'], 0, ',', '.') }} diajukan</span>
         </div>
         <div class="admin-panel admin-payment-metric-card">
             <span class="payment-metric-label">Perlu perbaikan</span>
-            <strong class="payment-metric-val">1</strong>
-            <span class="payment-metric-sub">Rp4.500.000 diajukan</span>
+            <strong class="payment-metric-val">{{ $metrics['fix']['count'] }}</strong>
+            <span class="payment-metric-sub">Rp{{ number_format($metrics['fix']['sum'], 0, ',', '.') }} diajukan</span>
         </div>
         <div class="admin-panel admin-payment-metric-card">
-            <span class="payment-metric-label">Terverifikasi Oktober</span>
-            <strong class="payment-metric-val">8</strong>
-            <span class="payment-metric-sub">Rp81.000.000 tercatat</span>
+            <span class="payment-metric-label">Terverifikasi {{ $metrics['verified']['label'] }}</span>
+            <strong class="payment-metric-val">{{ $metrics['verified']['count'] }}</strong>
+            <span class="payment-metric-sub">Rp{{ number_format($metrics['verified']['sum'], 0, ',', '.') }} tercatat</span>
         </div>
         <div class="admin-panel admin-payment-metric-card">
             <span class="payment-metric-label">Belum dibayar</span>
-            <strong class="payment-metric-val">1</strong>
-            <span class="payment-metric-sub">Rp18.000.000 pada invoice</span>
+            <strong class="payment-metric-val">{{ $metrics['unpaid']['count'] }}</strong>
+            <span class="payment-metric-sub">Rp{{ number_format($metrics['unpaid']['sum'], 0, ',', '.') }} pada invoice</span>
         </div>
     </div>
 
-    {{-- FEEDBACK BANNER (JIKA ADA NOTIFIKASI) --}}
-    @if(session('success'))
-        <div class="admin-alert-box alert-success-box">
-            <strong class="admin-alert-title">Catatan pembayaran disimpan</strong>
-            <p class="admin-alert-desc">{{ session('success') }}</p>
-        </div>
-    @endif
-
     {{-- PANEL UTAMA TABEL PEMBAYARAN (FIGMA 141:1729) --}}
     <div class="admin-panel admin-orders-panel">
-        {{-- TABS (FIGMA 141:1730) --}}
+        {{-- TABS (hitungan nyata) --}}
+        @php
+            $tabDefs = ['semua' => 'Semua', 'bukti-terkirim' => 'Bukti terkirim', 'belum-dibayar' => 'Belum dibayar', 'terverifikasi' => 'Terverifikasi', 'perlu-perbaikan' => 'Perlu perbaikan'];
+        @endphp
         <div class="admin-tabs">
-            <a href="{{ route('admin.pembayaran', ['tab' => 'semua']) }}" class="admin-tab-item {{ $activeTab === 'semua' ? 'is-active' : '' }}">
-                Semua
-            </a>
-            <a href="{{ route('admin.pembayaran', ['tab' => 'bukti-terkirim']) }}" class="admin-tab-item {{ $activeTab === 'bukti-terkirim' ? 'is-active' : '' }}">
-                Bukti terkirim (3)
-            </a>
-            <a href="{{ route('admin.pembayaran', ['tab' => 'belum-dibayar']) }}" class="admin-tab-item {{ $activeTab === 'belum-dibayar' ? 'is-active' : '' }}">
-                Belum dibayar
-            </a>
-            <a href="{{ route('admin.pembayaran', ['tab' => 'terverifikasi']) }}" class="admin-tab-item {{ $activeTab === 'terverifikasi' ? 'is-active' : '' }}">
-                Terverifikasi
-            </a>
-            <a href="{{ route('admin.pembayaran', ['tab' => 'perlu-perbaikan']) }}" class="admin-tab-item {{ $activeTab === 'perlu-perbaikan' ? 'is-active' : '' }}">
-                Perlu perbaikan
-            </a>
+            @foreach ($tabDefs as $key => $label)
+                <a href="{{ route('admin.pembayaran', array_filter(['tab' => $key, 'q' => $search, 'sumber' => $source, 'bulan' => $month])) }}" class="admin-tab-item {{ $activeTab === $key ? 'is-active' : '' }}">
+                    {{ $label }} ({{ $counts[$key] }})
+                </a>
+            @endforeach
         </div>
 
-        {{-- FILTER & SEARCH (FIGMA 141:1741) --}}
-        <div class="admin-filter-bar">
+        {{-- FILTER & PENCARIAN (berfungsi) --}}
+        <form method="GET" action="{{ route('admin.pembayaran') }}" class="admin-filter-bar">
+            <input type="hidden" name="tab" value="{{ $activeTab }}">
             <div class="admin-search-input-wrap">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6E7A8B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="11" cy="11" r="8"></circle>
-                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                </svg>
-                <input type="text" placeholder="Cari ID pembayaran, invoice, atau pelanggan" class="admin-search-input" value="{{ request('search') }}">
+                <input type="text" name="q" placeholder="Cari ID pembayaran, invoice, atau pelanggan (Enter)" class="admin-search-input" value="{{ $search }}">
             </div>
+            <select name="sumber" class="admin-select-dropdown" onchange="this.form.submit()">
+                <option value="">Semua sumber</option>
+                @foreach ($sources as $src)
+                    <option value="{{ $src }}" @selected($source === $src)>{{ $src }}</option>
+                @endforeach
+            </select>
+            <select name="bulan" class="admin-select-dropdown" onchange="this.form.submit()">
+                <option value="">Semua bulan</option>
+                @foreach ($months as $m)
+                    <option value="{{ $m['value'] }}" @selected($month === $m['value'])>{{ $m['label'] }}</option>
+                @endforeach
+            </select>
+            @if ($search || $source || $month)
+                <a href="{{ route('admin.pembayaran', ['tab' => $activeTab]) }}" class="admin-btn-outline btn-sm">Reset filter</a>
+            @endif
+        </form>
 
-            <div class="admin-select-dropdown">
-                <span>Semua sumber</span>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#253247" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <polyline points="6 9 12 15 18 9"></polyline>
-                </svg>
+        @if ($oldestLabel)
+            <div class="admin-alert-box alert-warning-box">
+                <strong class="admin-alert-title text-gold">Bukti tertua diterima {{ $oldestLabel }}</strong>
+                <p class="admin-alert-desc text-gold">Tinjau antrean sesuai waktu kirim. Penanda ini bukan janji waktu penyelesaian.</p>
             </div>
-
-            <div class="admin-select-dropdown">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#253247" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-                    <line x1="16" y1="2" x2="16" y2="6"></line>
-                    <line x1="8" y1="2" x2="8" y2="6"></line>
-                    <line x1="3" y1="10" x2="21" y2="10"></line>
-                </svg>
-                <span>Oktober 2026</span>
-            </div>
-        </div>
-
-        {{-- PEMBERITAHUAN ANTREAN (FIGMA 141:1751) --}}
-        <div class="admin-alert-box alert-warning-box">
-            <strong class="admin-alert-title text-gold">Bukti tertua diterima 5 Oktober</strong>
-            <p class="admin-alert-desc text-gold">Tinjau antrean sesuai waktu kirim. Penanda ini bukan janji waktu penyelesaian.</p>
-        </div>
+        @endif
 
         {{-- TABEL RECORD PEMBAYARAN (FIGMA 141:1754) --}}
         <div class="admin-table-container">
@@ -116,7 +97,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach($payments as $p)
+                    @forelse($payments as $p)
                         <tr>
                             <td>
                                 <div class="table-cell-order">
@@ -145,30 +126,23 @@
                                 </span>
                             </td>
                             <td style="text-align: right;">
-                                <a href="{{ route('admin.pembayaran.detail', ['id' => $p['id']]) }}" class="admin-table-action-link">
-                                    Tinjau →
+                                <a href="{{ $p['link'] }}" class="admin-table-action-link">
+                                    {{ $p['link_label'] }}
                                 </a>
                             </td>
                         </tr>
-                    @endforeach
+                    @empty
+                        <tr>
+                            <td colspan="6" style="text-align:center; padding:40px 0; color:#6E7A8B;">
+                                Tidak ada pembayaran yang cocok dengan tab atau filter ini.
+                            </td>
+                        </tr>
+                    @endforelse
                 </tbody>
             </table>
         </div>
 
-        {{-- PAGINASI (FIGMA 141:1763) --}}
-        <div class="admin-pagination-bar">
-            <span class="pagination-info">Menampilkan {{ count($payments) }} dari 3 bukti terkirim</span>
-            <div class="pagination-controls">
-                <button type="button" class="btn-page-nav is-disabled" disabled>Sebelumnya</button>
-                <div class="pagination-numbers">
-                    <span class="page-num is-active">● 1</span>
-                    <span class="page-num">2</span>
-                    <span class="page-num">3</span>
-                </div>
-                <button type="button" class="btn-page-nav">Berikutnya</button>
-            </div>
-        </div>
-
+        @include('admin.partials.pagination', ['paginator' => $paginator, 'label' => 'pembayaran'])
         <p class="admin-table-footer-hint">
             ID pembayaran berbeda dari kode pesanan dan nomor invoice. Transaksi terverifikasi tidak dapat dihapus.
         </p>
@@ -190,59 +164,53 @@
             <p class="admin-modal-subtitle">Rekam transaksi tunai atau transfer langsung di studio</p>
 
             <hr class="divider">
-
-            <div class="admin-meta-row-2">
-                <div class="admin-meta-field">
-                    <label class="admin-meta-label">Nomor invoice terkait *</label>
-                    <input type="text" class="admin-form-input font-mono" placeholder="INV-CH-2026-..." value="INV-CH-2026-004">
+            <form action="{{ route('admin.pembayaran.manual') }}" method="POST" id="form-manual-payment">
+                @csrf
+                <div class="admin-meta-row-2">
+                    <div class="admin-meta-field">
+                        <label class="admin-meta-label">Nomor invoice terkait *</label>
+                        <input type="text" name="invoice" class="admin-form-input font-mono" placeholder="INV-CH-2026-XXXXX" required value="{{ old('invoice') }}">
+                    </div>
+                    <div class="admin-meta-field">
+                        <label class="admin-meta-label">Metode penerimaan *</label>
+                        <select name="metode" class="admin-form-input" required>
+                            @foreach ($manualMethods as $mm)
+                                <option value="{{ $mm }}" @selected(old('metode') === $mm)>{{ $mm }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
+                <div class="admin-meta-row-2">
+                    <div class="admin-meta-field">
+                        <label class="admin-meta-label">Nominal diterima *</label>
+                        <input type="text" name="nominal" class="admin-form-input font-mono" placeholder="Contoh: 2000000" inputmode="numeric" required value="{{ old('nominal') }}">
+                    </div>
+                    <div class="admin-meta-field">
+                        <label class="admin-meta-label">Tanggal penerimaan *</label>
+                        <input type="date" name="tanggal" class="admin-form-input" required value="{{ old('tanggal', date('Y-m-d')) }}">
+                    </div>
                 </div>
                 <div class="admin-meta-field">
-                    <label class="admin-meta-label">Metode penerimaan *</label>
-                    <select class="admin-form-input">
-                        <option selected>Tunai di Kasir Studio</option>
-                        <option>EDC / Kartu Debit</option>
-                        <option>Transfer Bank Langsung</option>
-                    </select>
+                    <label class="admin-meta-label">Catatan kasir / administrasi</label>
+                    <textarea name="catatan" class="admin-form-input" rows="3" maxlength="500" placeholder="Contoh: Diterima langsung di studio.">{{ old('catatan') }}</textarea>
                 </div>
-            </div>
-
-            <div class="admin-meta-row-2">
-                <div class="admin-meta-field">
-                    <label class="admin-meta-label">Nominal diterima *</label>
-                    <input type="text" class="admin-form-input font-mono" placeholder="Rp 0" value="Rp18.000.000">
-                </div>
-                <div class="admin-meta-field">
-                    <label class="admin-meta-label">Tanggal penerimaan *</label>
-                    <input type="date" class="admin-form-input" value="{{ date('Y-m-d') }}">
-                </div>
-            </div>
-
-            <div class="admin-meta-field">
-                <label class="admin-meta-label">Catatan kasir / administrasi</label>
-                <textarea class="admin-form-input" rows="3">Diterima langsung di studio oleh Naro Capture.</textarea>
-            </div>
-
+            </form>
             <div class="admin-alert-box alert-success-box">
                 <strong class="admin-alert-title text-green">Pencatatan resmi</strong>
                 <p class="admin-alert-desc text-green">
-                    Pembayaran manual akan tercatat ke pembukuan dan memvalidasi invoice terkait.
+                    Pembayaran manual langsung berstatus terverifikasi dan memperbarui status pembayaran invoice terkait. Nomor invoice ada di halaman Pesanan.
                 </p>
             </div>
-
             <hr class="divider">
-
             <div class="admin-modal-actions">
                 <button type="button" class="admin-btn-outline" data-close="modal-manual-payment">Batal</button>
-                <button type="button" class="admin-btn-primary" onclick="alert('Pembayaran manual berhasil disimpan.')">
-                    Simpan pembayaran
-                </button>
+                <button type="submit" form="form-manual-payment" class="admin-btn-primary">Simpan pembayaran</button>
             </div>
         </div>
     </div>
-
     {{-- FOOTER COPYRIGHT (FIGMA 141:1780) --}}
     <div class="admin-footer-copyright">
-        © 2026 Naro Capture · Data ilustrasi · Akses terbatas admin
+        © {{ date('Y') }} Naro Capture · Akses terbatas admin
     </div>
 
     <script>
@@ -252,6 +220,9 @@
             if (btn && modal) {
                 btn.addEventListener('click', () => modal.classList.add('is-open'));
             }
+            @if ($errors->has('invoice') || $errors->has('metode') || $errors->has('nominal') || $errors->has('tanggal'))
+                modal?.classList.add('is-open');
+            @endif
 
             document.querySelectorAll('[data-close]').forEach(b => {
                 b.addEventListener('click', () => {

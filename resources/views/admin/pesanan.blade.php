@@ -11,65 +11,57 @@
             <p class="admin-page-subtitle">Kelola permintaan, persiapan sesi, dan riwayat pelanggan.</p>
         </div>
         <a href="{{ route('pemesanan') }}" target="_blank" class="admin-btn-primary">
-            Tambah pesanan
+            Tambah pesanan ↗
         </a>
     </div>
 
-    {{-- BARIS KONTEN METRIK STATUS (FIGMA 141:1046) --}}
+    {{-- RINGKASAN STATUS (data nyata) --}}
     <div class="admin-status-summary-bar">
-        <span class="status-indicator-item text-blue">● 12 pesanan bulan ini</span>
-        <span class="status-indicator-item text-gold">● 4 perlu ditinjau</span>
-        <span class="status-indicator-item text-green">● 6 sesi disetujui</span>
+        <span class="status-indicator-item text-blue">● {{ $summary['month'] }} pesanan dibuat bulan ini</span>
+        <span class="status-indicator-item text-gold">● {{ $summary['review'] }} bukti pembayaran perlu ditinjau</span>
+        <span class="status-indicator-item text-green">● {{ $summary['approved'] }} sesi dikonfirmasi</span>
     </div>
 
     {{-- PANEL UTAMA TABEL (FIGMA 141:1050) --}}
     <div class="admin-panel admin-orders-panel">
-        {{-- PILIHAN TAB STATUS (FIGMA 141:1051) --}}
+        {{-- PILIHAN TAB STATUS (hitungan nyata) --}}
+        @php
+            $tabDefs = ['semua' => 'Semua pesanan', 'permintaan' => 'Permintaan', 'dikonfirmasi' => 'Dikonfirmasi', 'selesai' => 'Selesai', 'dibatalkan' => 'Dibatalkan', 'arsip' => 'Arsip'];
+        @endphp
         <div class="admin-tabs">
-            <a href="{{ route('admin.pesanan', ['tab' => 'semua']) }}" class="admin-tab-item {{ $activeTab === 'semua' ? 'is-active' : '' }}">
-                Semua pesanan (24)
-            </a>
-            <a href="{{ route('admin.pesanan', ['tab' => 'permintaan']) }}" class="admin-tab-item {{ $activeTab === 'permintaan' ? 'is-active' : '' }}">
-                Permintaan (4)
-            </a>
-            <a href="{{ route('admin.pesanan', ['tab' => 'dikonfirmasi']) }}" class="admin-tab-item {{ $activeTab === 'dikonfirmasi' ? 'is-active' : '' }}">
-                Dikonfirmasi (6)
-            </a>
-            <a href="{{ route('admin.pesanan', ['tab' => 'selesai']) }}" class="admin-tab-item {{ $activeTab === 'selesai' ? 'is-active' : '' }}">
-                Selesai
-            </a>
-            <a href="{{ route('admin.pesanan', ['tab' => 'arsip']) }}" class="admin-tab-item {{ $activeTab === 'arsip' ? 'is-active' : '' }}">
-                Arsip
-            </a>
+            @foreach ($tabDefs as $key => $label)
+                <a href="{{ route('admin.pesanan', array_filter(['tab' => $key, 'q' => $search, 'pembayaran' => $payment, 'bulan' => $month])) }}" class="admin-tab-item {{ $activeTab === $key ? 'is-active' : '' }}">
+                    {{ $label }} ({{ $counts[$key] }})
+                </a>
+            @endforeach
         </div>
 
-        {{-- FILTER & SEARCH (FIGMA 141:1062) --}}
-        <div class="admin-filter-bar">
+        {{-- FILTER & PENCARIAN (berfungsi) --}}
+        <form method="GET" action="{{ route('admin.pesanan') }}" class="admin-filter-bar" id="orderFilterForm">
+            <input type="hidden" name="tab" value="{{ $activeTab }}">
             <div class="admin-search-input-wrap">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6E7A8B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <circle cx="11" cy="11" r="8"></circle>
                     <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                 </svg>
-                <input type="text" placeholder="Cari nama atau kode pesanan" class="admin-search-input" value="{{ request('search') }}">
+                <input type="text" name="q" placeholder="Cari nama, kode, email, atau paket (Enter)" class="admin-search-input" value="{{ $search }}">
             </div>
-
-            <div class="admin-select-dropdown">
-                <span>Semua status</span>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#253247" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <polyline points="6 9 12 15 18 9"></polyline>
-                </svg>
-            </div>
-
-            <div class="admin-select-dropdown">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#253247" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-                    <line x1="16" y1="2" x2="16" y2="6"></line>
-                    <line x1="8" y1="2" x2="8" y2="6"></line>
-                    <line x1="3" y1="10" x2="21" y2="10"></line>
-                </svg>
-                <span>Oktober 2026</span>
-            </div>
-        </div>
+            <select name="pembayaran" class="admin-select-dropdown" onchange="this.form.submit()">
+                <option value="">Semua pembayaran</option>
+                @foreach ($paymentStatuses as $st)
+                    <option value="{{ $st }}" @selected($payment === $st)>{{ $st }}</option>
+                @endforeach
+            </select>
+            <select name="bulan" class="admin-select-dropdown" onchange="this.form.submit()">
+                <option value="">Semua bulan</option>
+                @foreach ($months as $m)
+                    <option value="{{ $m['value'] }}" @selected($month === $m['value'])>{{ $m['label'] }}</option>
+                @endforeach
+            </select>
+            @if ($search || $payment || $month)
+                <a href="{{ route('admin.pesanan', ['tab' => $activeTab]) }}" class="admin-btn-outline btn-sm">Reset filter</a>
+            @endif
+        </form>
 
         {{-- TABEL RECORD (FIGMA 141:1072) --}}
         <div class="admin-table-container">
@@ -85,7 +77,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach($orders as $item)
+                    @forelse($orders as $item)
                         <tr>
                             <td>
                                 <div class="table-cell-order">
@@ -121,29 +113,23 @@
                                 </a>
                             </td>
                         </tr>
-                    @endforeach
+                    @empty
+                        <tr>
+                            <td colspan="6" style="text-align:center; padding:40px 0; color:#6E7A8B;">
+                                Tidak ada pesanan yang cocok dengan tab atau filter ini.
+                            </td>
+                        </tr>
+                    @endforelse
                 </tbody>
             </table>
         </div>
 
-        {{-- PAGINASI (FIGMA 141:1091) --}}
-        <div class="admin-pagination-bar">
-            <span class="pagination-info">Menampilkan {{ count($orders) }} dari 24 record</span>
-            <div class="pagination-controls">
-                <button type="button" class="btn-page-nav is-disabled" disabled>Sebelumnya</button>
-                <div class="pagination-numbers">
-                    <span class="page-num is-active">● 1</span>
-                    <span class="page-num">2</span>
-                    <span class="page-num">3</span>
-                </div>
-                <button type="button" class="btn-page-nav">Berikutnya</button>
-            </div>
-        </div>
+        @include('admin.partials.pagination', ['paginator' => $paginator, 'label' => 'pesanan'])
     </div>
 
     {{-- FOOTER COPYRIGHT (FIGMA 141:1104) --}}
     <div class="admin-footer-copyright">
-        © 2026 Naro Capture · Data ilustrasi · Akses terbatas admin
+        © {{ date('Y') }} Naro Capture · Akses terbatas admin
     </div>
 @endsection
 

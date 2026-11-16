@@ -7,6 +7,8 @@ use App\Models\Order;
 use App\Models\Package;
 use App\Models\Payment;
 use App\Models\StudioSlot;
+use App\Support\Studio;
+use Illuminate\Validation\Rule;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
@@ -20,12 +22,6 @@ class BookingController extends Controller
         $dbPackages = Package::where('is_active', true)->get();
 
         $packages = $dbPackages->map(function ($pkg) {
-            $imageMap = [
-                'birthday-family-photoshoot' => 'paket-1.jpg',
-                'prewedding' => 'paket-2.jpg',
-                'graduation' => 'paket-3.jpg',
-            ];
-
             return [
                 'id' => $pkg->slug,
                 'code' => $pkg->code,
@@ -36,7 +32,7 @@ class BookingController extends Controller
                 'duration_label' => $pkg->duration,
                 'location_note' => 'Lokasi sesi dibahas saat perencanaan. Biaya transport di luar harga paket.',
                 'note' => $pkg->tagline,
-                'image' => $imageMap[$pkg->slug] ?? 'paket-1.jpg',
+                'image' => $pkg->imageSource(),
                 'desc' => $pkg->description,
                 'items' => is_array($pkg->features) ? $pkg->features : [],
             ];
@@ -73,7 +69,25 @@ class BookingController extends Controller
             $selectedPackageId = ($packages[1]['id'] ?? ($packages[0]['id'] ?? null));
         }
 
-        return view('pemesanan', compact('packages', 'selectedPackageId'));
+        // Data kalender (nyata, mengikuti tanggal hari ini WIB) untuk tiap durasi paket
+        $from = Studio::minDate();
+        $to = Studio::maxDate();
+        $availability = [];
+        foreach (collect($packages)->pluck('duration')->unique() as $duration) {
+            $availability[(string) $duration] = Studio::availability($from, $to, (int) $duration);
+        }
+
+        $calendar = [
+            'today' => Studio::today()->toDateString(),
+            'min' => $from->toDateString(),
+            'max' => $to->toDateString(),
+            'slots' => Studio::slots(),
+            'availability' => $availability,
+            'oldDate' => old('session_date'),
+            'oldTime' => old('session_time'),
+        ];
+
+        return view('pemesanan', compact('packages', 'selectedPackageId', 'calendar'));
     }
 
     /**
@@ -82,35 +96,44 @@ class BookingController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'package_id' => 'required|string',
-            'session_date' => 'nullable|string',
-            'session_time' => 'nullable|string',
+            'package_id' => ['required', 'string', Rule::exists('packages', 'slug')->where('is_active', true)],
+            'session_date' => ['required', 'date_format:Y-m-d'],
+            'session_time' => ['required', 'string'],
             'nama_lengkap' => 'required|string|max:255',
             'email' => 'required|email|max:255',
             'whatsapp' => 'required|string|max:50',
             'lokasi' => 'nullable|string|max:255',
-            'catatan' => 'nullable|string',
+            'catatan' => 'nullable|string|max:2000',
+        ], [
+            'package_id.required' => 'Pilih salah satu paket layanan.',
+            'package_id.exists' => 'Paket yang dipilih tidak tersedia.',
+            'session_date.required' => 'Pilih tanggal sesi pada kalender.',
+            'session_date.date_format' => 'Format tanggal sesi tidak valid.',
+            'session_time.required' => 'Pilih jam sesi yang tersedia.',
+            'nama_lengkap.required' => 'Nama lengkap wajib diisi.',
+            'email.required' => 'Alamat email wajib diisi.',
+            'email.email' => 'Format alamat email tidak valid.',
+            'whatsapp.required' => 'Nomor WhatsApp wajib diisi.',
         ]);
 
         $packageSlug = $validated['package_id'];
-        $package = Package::where('slug', $packageSlug)->first();
+        $package = Package::where('slug', $packageSlug)->firstOrFail();
 
-        $imageMap = [
-            'birthday-family-photoshoot' => 'paket-1.jpg',
-            'prewedding' => 'paket-2.jpg',
-            'graduation' => 'paket-3.jpg',
-        ];
+        $duration = (int) ($package->duration_minutes ?: 60);
 
-        $packageName = $package ? $package->name : ucwords(str_replace('-', ' ', $packageSlug));
-        $packagePrice = $package ? $package->price : 9500000;
+        // Pastikan jadwal masih tersedia (bukan tanggal lampau, tidak bentrok, tidak diblokir)
+        if (!Studio::isAvailable($validated['session_date'], $validated['session_time'], $duration)) {
+            return back()->withInput()->withErrors([
+                'session_date' => 'Jadwal yang Anda pilih sudah tidak tersedia. Silakan pilih tanggal atau jam lain.',
+            ]);
+        }
+
+        $packageName = $package->name;
+        $packagePrice = $package->price;
         $packagePriceFormatted = 'Rp' . number_format($packagePrice, 0, ',', '.');
-        $packageImage = $imageMap[$packageSlug] ?? 'paket-1.jpg';
-        $packageDesc = $package ? (string) $package->description : '';
-        $packageItems = $package && is_array($package->features) ? $package->features : [
-            'Sesi foto studio terkurasi',
-            'File resolusi tinggi via cloud pribadi',
-            'Izin cetak pribadi'
-        ];
+        $packageImage = $package->imageSource();
+        $packageDesc = (string) $package->description;
+        $packageItems = is_array($package->features) ? $package->features : [];
         $lokasiHint = 'Lokasi sesi dibahas saat perencanaan. Biaya transport di luar harga paket.';
 
         // 1. Simpan atau perbarui Customer
@@ -121,7 +144,7 @@ class BookingController extends Controller
         $customer->fill([
             'name' => $validated['nama_lengkap'],
             'whatsapp' => $validated['whatsapp'],
-            'status' => 'aktif',
+            'status' => 'Aktif',
         ])->save();
 
         // 2. Generate Nomor Unik
@@ -131,26 +154,22 @@ class BookingController extends Controller
         } while (Order::where('order_code', $orderCode)->exists());
         $invoiceNumber = 'INV-CH-' . date('Y') . '-' . $suffix;
 
-        // Tanggal sesi
-        $rawSessionDate = $validated['session_date'] ?? date('Y-m-d', strtotime('+7 days'));
-        // Konversi ke format Y-m-d bila dalam string bahasa
-        $sessionDateSql = date('Y-m-d', strtotime($rawSessionDate) ?: strtotime('+7 days'));
-
-        $rawTimeSlot = ($validated['session_time'] ?? '15.30') . '–17.00 WIB · 90 menit';
+        $sessionDateSql = $validated['session_date'];
+        $timeSlotLabel = Studio::slotLabel($validated['session_time'], $duration);
 
         // 3. Simpan Order ke Database
         $order = Order::create([
             'order_code' => $orderCode,
             'invoice_number' => $invoiceNumber,
             'customer_id' => $customer->id,
-            'package_id' => $package ? $package->id : null,
+            'package_id' => $package->id,
             'customer_name' => $customer->name,
             'customer_email' => $customer->email,
             'customer_whatsapp' => $customer->whatsapp,
             'package_name' => $packageName,
             'total_price' => $packagePrice,
             'session_date' => $sessionDateSql,
-            'session_time_slot' => $rawTimeSlot,
+            'session_time_slot' => $timeSlotLabel,
             'location' => $validated['lokasi'] ?? 'Studio Utama Naro Capture',
             'customer_notes' => $validated['catatan'] ?? null,
             'session_status' => 'Permintaan',
@@ -158,7 +177,7 @@ class BookingController extends Controller
         ]);
 
         // Simpan juga ke session untuk aliran UX instan tanpa login
-        $bookingData = [
+        session(['last_booking' => [
             'order_id' => $order->id,
             'order_code' => $order->order_code,
             'invoice_number' => $order->invoice_number,
@@ -170,18 +189,17 @@ class BookingController extends Controller
             'package_desc' => $packageDesc,
             'package_items' => $packageItems,
             'lokasi_hint' => $lokasiHint,
-            'session_date' => $validated['session_date'] ?? date('l, d F Y', strtotime($sessionDateSql)),
-            'session_time' => $rawTimeSlot,
+            'session_date' => Studio::dateLabel($sessionDateSql),
+            'session_time' => $timeSlotLabel,
             'nama_lengkap' => $order->customer_name,
             'email' => $order->customer_email,
             'whatsapp' => $order->customer_whatsapp,
             'lokasi' => $order->location,
             'catatan' => $order->customer_notes,
-        ];
+        ]]);
 
-        session(['last_booking' => $bookingData]);
-
-        return redirect()->route('checkout');
+        return redirect()->route('checkout')
+            ->with('success', 'Permintaan pemesanan berhasil dikirim. Kode pesanan Anda: ' . $order->order_code);
     }
 
     /**
@@ -196,7 +214,46 @@ class BookingController extends Controller
                 ->with('error', 'Sesi pemesanan tidak ditemukan. Silakan isi formulir pemesanan terlebih dahulu.');
         }
 
-        return view('checkout', compact('data'));
+        // Status nyata (real-time) dari database
+        $order = Order::with('latestPayment')->where('order_code', $data['order_code'] ?? '')->first();
+        if (!$order) {
+            session()->forget('last_booking');
+            return redirect()->route('pemesanan')
+                ->with('error', 'Pesanan tidak ditemukan. Silakan buat pemesanan baru.');
+        }
+
+        // Segarkan data ringkasan dari pesanan di database (harga, jadwal, paket)
+        $data['package_name'] = $order->package_name;
+        $data['package_price'] = 'Rp' . number_format($order->total_price, 0, ',', '.');
+        $data['session_date'] = $order->session_date ? Studio::dateLabel($order->session_date) : $data['session_date'];
+        $data['session_time'] = $order->session_time_slot;
+        $data['lokasi'] = $order->location;
+
+        $payment = $order->latestPayment;
+        $live = [
+            'payment_status' => $order->payment_status,
+            'session_status' => $order->session_status,
+            'payment_badge' => match ($order->payment_status) {
+                'Terverifikasi' => 'Lunas · Terverifikasi',
+                'Bukti terkirim' => 'Bukti terkirim · Menunggu verifikasi',
+                'Perlu perbaikan' => 'Bukti perlu diperbaiki',
+                'Refund' => 'Refund',
+                default => 'Belum dibayar',
+            },
+            'session_badge' => match ($order->session_status) {
+                'Dikonfirmasi' => 'Sesi dikonfirmasi',
+                'Selesai' => 'Sesi selesai',
+                'Dibatalkan' => 'Pesanan dibatalkan',
+                default => 'Menunggu konfirmasi',
+            },
+            'paid_nominal' => $payment ? 'Rp' . number_format($payment->nominal, 0, ',', '.') : null,
+            'paid_date' => $payment && $payment->transfer_date ? Studio::dateLabel($payment->transfer_date, 'j F Y') : null,
+            'review_note' => $payment ? $payment->customer_message : null,
+            'can_pay' => in_array($order->payment_status, ['Belum dibayar', 'Perlu perbaikan'], true)
+                && !in_array($order->session_status, ['Dibatalkan', 'Selesai'], true),
+        ];
+
+        return view('checkout', compact('data', 'live'));
     }
 
     /**

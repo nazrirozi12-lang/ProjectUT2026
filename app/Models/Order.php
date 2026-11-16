@@ -26,12 +26,30 @@ class Order extends Model
         'internal_notes',
         'session_status',
         'payment_status',
+        'confirmed_at',
+        'completed_at',
+        'cancelled_at',
+        'archived_at',
+        'cancel_reason',
     ];
 
     protected $casts = [
         'session_date' => 'date',
         'total_price' => 'integer',
+        'confirmed_at' => 'datetime',
+        'completed_at' => 'datetime',
+        'cancelled_at' => 'datetime',
+        'archived_at' => 'datetime',
     ];
+
+    /** Cari pesanan lewat kode (CH-...) atau id numerik; gagal -> ModelNotFoundException. */
+    public static function findByCodeOrFail(string|int $key): self
+    {
+        return static::query()
+            ->where('order_code', (string) $key)
+            ->when(ctype_digit((string) $key), fn ($q) => $q->orWhere('id', (int) $key))
+            ->firstOrFail();
+    }
 
     public function customer()
     {

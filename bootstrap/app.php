@@ -20,6 +20,26 @@ $app = Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
+        // Halaman/data admin yang tidak ditemukan -> kembali ke daftar dengan notifikasi
+        $adminNotFound = function (Request $request) {
+            if (!$request->is('admin/*') || $request->expectsJson()) {
+                return null;
+            }
+            $sections = [
+                'pesanan' => 'admin.pesanan', 'pembayaran' => 'admin.pembayaran', 'jadwal' => 'admin.jadwal',
+                'pelanggan' => 'admin.pelanggan', 'paket' => 'admin.paket', 'galeri' => 'admin.galeri',
+                'pengaturan' => 'admin.pengaturan',
+            ];
+            $route = $sections[$request->segment(2)] ?? 'admin.dashboard';
+
+            return redirect()->route($route)->with('error', 'Data tidak ditemukan atau sudah dihapus.');
+        };
+        $exceptions->render(function (\Illuminate\Database\Eloquent\ModelNotFoundException $e, Request $request) use ($adminNotFound) {
+            return $adminNotFound($request);
+        });
+        $exceptions->render(function (\Symfony\Component\HttpKernel\Exception\NotFoundHttpException $e, Request $request) use ($adminNotFound) {
+            return $adminNotFound($request);
+        });
         $exceptions->shouldRenderJsonWhen(
             fn (Request $request) => $request->is('api/*') || $request->expectsJson(),
         );

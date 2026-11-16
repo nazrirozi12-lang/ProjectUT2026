@@ -57,10 +57,21 @@
             <p class="body-text" style="width:360px">Sesi yang sederhana, dipandu dengan lembut, dan memberi ruang bagi Anda untuk menjadi diri sendiri.</p>
         </div>
 
-        <div class="packages">
+        @php $scrollable = count($packages) > 3; @endphp
+        <div class="packages-slider {{ $scrollable ? 'is-scrollable' : '' }}">
+        @if ($scrollable)
+            <div class="packages-slider__nav">
+                <span class="packages-slider__hint">Geser untuk melihat paket lainnya ({{ count($packages) }} paket)</span>
+                <div class="packages-slider__btns">
+                    <button type="button" class="packages-slider__btn" id="pkgPrev" aria-label="Paket sebelumnya">‹</button>
+                    <button type="button" class="packages-slider__btn" id="pkgNext" aria-label="Paket berikutnya">›</button>
+                </div>
+            </div>
+        @endif
+        <div class="packages {{ $scrollable ? 'packages--scroll' : '' }}" id="packagesTrack">
             @foreach ($packages as $pkg)
                 <article class="package {{ $pkg['featured'] ? 'package--featured' : '' }}">
-                    <img class="package__img" src="{{ asset('images/' . $pkg['image']) }}" alt="{{ $pkg['name'] }}">
+                    <img class="package__img" src="{{ \App\Support\Media::pkg($pkg['image']) }}" alt="{{ $pkg['name'] }}">
                     <div class="package__body">
                         <div class="package__intro">
                             @if (!empty($pkg['label']) || $pkg['featured'])
@@ -96,6 +107,17 @@
                 </article>
             @endforeach
         </div>
+        </div>
+        @if ($scrollable)
+            <script>
+                document.addEventListener('DOMContentLoaded', function () {
+                    var track = document.getElementById('packagesTrack');
+                    var step = function () { var c = track.querySelector('.package'); return c ? c.getBoundingClientRect().width + 24 : 320; };
+                    document.getElementById('pkgPrev').addEventListener('click', function () { track.scrollBy({ left: -step(), behavior: 'smooth' }); });
+                    document.getElementById('pkgNext').addEventListener('click', function () { track.scrollBy({ left: step(), behavior: 'smooth' }); });
+                });
+            </script>
+        @endif
 
         <div class="section__note" style="align-items:center">
             <span style="line-height:1.6">Setiap sesi dilengkapi dengan sentuhan yang lebih personal. Galeri biasanya dikirim dalam waktu dua minggu.</span>

@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="{{ asset('css/style.css') }}">
 </head>
 <body class="admin-body">
+    @include('partials.flash')
     <div class="admin-layout">
         {{-- SIDEBAR STUDIO (FIGMA 141:867) --}}
         <aside class="admin-sidebar">

@@ -22,6 +22,7 @@ class Payment extends Model
         'file_extension',
         'status',
         'internal_review_notes',
+        'customer_message',
         'verified_at',
     ];
 
@@ -30,6 +31,14 @@ class Payment extends Model
         'verified_at' => 'datetime',
         'nominal' => 'integer',
     ];
+
+    public static function findByCodeOrFail(string|int $key): self
+    {
+        return static::query()
+            ->where('payment_code', (string) $key)
+            ->when(ctype_digit((string) $key), fn ($q) => $q->orWhere('id', (int) $key))
+            ->firstOrFail();
+    }
 
     public function order()
     {

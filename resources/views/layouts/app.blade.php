@@ -15,6 +15,7 @@
     </script>
 </head>
 <body>
+    @include('partials.flash', ['skipSuccess' => true])
     {{-- NAVIGASI --}}
     <header class="nav">
         <a href="{{ url('/') }}" class="brand brand--light" aria-label="Naro Capture">

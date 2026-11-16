@@ -6,9 +6,6 @@
 @php
     $selPkg = collect($packages)->firstWhere('id', $selectedPackageId) ?? ($packages[0] ?? []);
     $selDur = (int) ($selPkg['duration'] ?? 60);
-    $selStart = [15, 30];
-    $selEndMin = $selStart[0] * 60 + $selStart[1] + $selDur;
-    $selEnd = sprintf('%02d.%02d', intdiv($selEndMin, 60) % 24, $selEndMin % 60);
 @endphp
 <main class="booking-page">
     {{-- Breadcrumb & Header --}}
@@ -47,7 +44,7 @@
                     <label class="package-card-select {{ $selectedPackageId === $pkg['id'] ? 'is-selected' : '' }}" data-id="{{ $pkg['id'] }}" data-name="{{ $pkg['name'] }}" data-price="{{ $pkg['price'] }}" data-duration="{{ $pkg['duration'] }}" data-location="{{ $pkg['location_note'] }}">
                         <input type="radio" name="package_id" value="{{ $pkg['id'] }}" {{ $selectedPackageId === $pkg['id'] ? 'checked' : '' }} class="sr-only package-radio">
                         <div class="pkg-card__img">
-                            <img src="{{ asset('images/' . $pkg['image']) }}" alt="{{ $pkg['name'] }}">
+                            <img src="{{ \App\Support\Media::pkg($pkg['image']) }}" alt="{{ $pkg['name'] }}">
                         </div>
                         <div class="pkg-card__body">
                             <div class="pkg-card__top">
@@ -101,64 +98,19 @@
 
                     {{-- Header Bulan --}}
                     <div class="calendar-month-header">
-                        <h3 class="month-title" id="currentMonthYear">Oktober 2026</h3>
+                        <h3 class="month-title" id="currentMonthYear"></h3>
                         <div class="month-nav">
-                            <button type="button" class="btn-icon" aria-label="Bulan sebelumnya"><img src="{{ asset('images/chevron-left.svg') }}" alt=""></button>
-                            <button type="button" class="btn-icon" aria-label="Bulan berikutnya"><img src="{{ asset('images/chevron-right.svg') }}" alt=""></button>
+                            <button type="button" class="btn-icon" id="calPrev" aria-label="Bulan sebelumnya"><img src="{{ asset('images/chevron-left.svg') }}" alt=""></button>
+                            <button type="button" class="btn-icon" id="calNext" aria-label="Bulan berikutnya"><img src="{{ asset('images/chevron-right.svg') }}" alt=""></button>
                         </div>
                     </div>
 
-                    {{-- Tabel Kalender --}}
+                    {{-- Tabel Kalender (dirender dari tanggal hari ini + ketersediaan nyata) --}}
                     <div class="calendar-grid">
                         <div class="cal-days-header">
                             <span>Sen</span><span>Sel</span><span>Rab</span><span>Kam</span><span>Jum</span><span>Sab</span><span>Min</span>
                         </div>
-                        <div class="cal-dates">
-                            {{-- Baris 1: Sisa September --}}
-                            <div class="cal-date is-disabled">28</div>
-                            <div class="cal-date is-disabled">29</div>
-                            <div class="cal-date is-disabled">30</div>
-                            <div class="cal-date is-disabled">1</div>
-                            <div class="cal-date is-disabled">2</div>
-                            <div class="cal-date is-disabled">3</div>
-                            <div class="cal-date is-disabled">4</div>
-
-                            {{-- Baris 2 --}}
-                            <div class="cal-date is-disabled">5</div>
-                            <div class="cal-date is-available" data-date="2026-10-06" data-label="Selasa, 6 Oktober 2026">6</div>
-                            <div class="cal-date is-available" data-date="2026-10-07" data-label="Rabu, 7 Oktober 2026">7</div>
-                            <div class="cal-date is-disabled">8</div>
-                            <div class="cal-date is-available" data-date="2026-10-09" data-label="Jumat, 9 Oktober 2026">9</div>
-                            <div class="cal-date is-available" data-date="2026-10-10" data-label="Sabtu, 10 Oktober 2026">10</div>
-                            <div class="cal-date is-disabled">11</div>
-
-                            {{-- Baris 3 --}}
-                            <div class="cal-date is-available" data-date="2026-10-12" data-label="Senin, 12 Oktober 2026">12</div>
-                            <div class="cal-date is-available" data-date="2026-10-13" data-label="Selasa, 13 Oktober 2026">13</div>
-                            <div class="cal-date is-disabled">14</div>
-                            <div class="cal-date is-available" data-date="2026-10-15" data-label="Kamis, 15 Oktober 2026">15</div>
-                            <div class="cal-date is-available" data-date="2026-10-16" data-label="Jumat, 16 Oktober 2026">16</div>
-                            <div class="cal-date is-available is-selected" data-date="2026-10-17" data-label="Sabtu, 17 Oktober 2026">17</div>
-                            <div class="cal-date is-disabled">18</div>
-
-                            {{-- Baris 4 --}}
-                            <div class="cal-date is-available" data-date="2026-10-19" data-label="Senin, 19 Oktober 2026">19</div>
-                            <div class="cal-date is-available" data-date="2026-10-20" data-label="Selasa, 20 Oktober 2026">20</div>
-                            <div class="cal-date is-disabled">21</div>
-                            <div class="cal-date is-available" data-date="2026-10-22" data-label="Kamis, 22 Oktober 2026">22</div>
-                            <div class="cal-date is-available" data-date="2026-10-23" data-label="Jumat, 23 Oktober 2026">23</div>
-                            <div class="cal-date is-available" data-date="2026-10-24" data-label="Sabtu, 24 Oktober 2026">24</div>
-                            <div class="cal-date is-disabled">25</div>
-
-                            {{-- Baris 5 --}}
-                            <div class="cal-date is-available" data-date="2026-10-26" data-label="Senin, 26 Oktober 2026">26</div>
-                            <div class="cal-date is-available" data-date="2026-10-27" data-label="Selasa, 27 Oktober 2026">27</div>
-                            <div class="cal-date is-disabled">28</div>
-                            <div class="cal-date is-available" data-date="2026-10-29" data-label="Kamis, 29 Oktober 2026">29</div>
-                            <div class="cal-date is-available" data-date="2026-10-30" data-label="Jumat, 30 Oktober 2026">30</div>
-                            <div class="cal-date is-available" data-date="2026-10-31" data-label="Sabtu, 31 Oktober 2026">31</div>
-                            <div class="cal-date is-disabled">1</div>
-                        </div>
+                        <div class="cal-dates" id="calDates"></div>
                     </div>
 
                     {{-- Legenda --}}
@@ -177,33 +129,25 @@
                         </div>
                     </div>
 
-                    <input type="hidden" name="session_date" id="selectedDateInput" value="2026-10-17">
+                    <input type="hidden" name="session_date" id="selectedDateInput" value="{{ old('session_date') }}">
+                    @error('session_date')
+                        <p class="form-error" style="color:#D32F2F; font-size:13px; margin-top:8px;">{{ $message }}</p>
+                    @enderror
+                    @error('session_time')
+                        <p class="form-error" style="color:#D32F2F; font-size:13px; margin-top:8px;">{{ $message }}</p>
+                    @enderror
 
                     <hr class="divider">
 
                     {{-- Pilihan Jam --}}
                     <div class="time-selection-wrap">
                         <div class="time-header">
-                            <span class="time-date-label" id="timeDateDisplay">Sabtu, 17 Oktober 2026</span>
+                            <span class="time-date-label" id="timeDateDisplay">Pilih tanggal</span>
                             <span class="small-caps">WIB</span>
                         </div>
-                        <div class="time-slots">
-                            <label class="time-slot-btn">
-                                <input type="radio" name="session_time" value="09.00" class="sr-only time-radio">
-                                <span class="slot-time">09.00</span>
-                                <span class="slot-status">Tersedia</span>
-                            </label>
-                            <div class="time-slot-btn is-full">
-                                <span class="slot-time">13.00</span>
-                                <span class="slot-status">Penuh</span>
-                            </div>
-                            <label class="time-slot-btn is-selected">
-                                <input type="radio" name="session_time" value="15.30" checked class="sr-only time-radio">
-                                <span class="slot-time">15.30</span>
-                                <span class="slot-status">Dipilih</span>
-                            </label>
-                        </div>
-                        <p class="time-duration-note" id="timeDurationNote">Durasi {{ $selPkg['name'] ?? '' }}: {{ $selDur }} menit · 15.30–{{ $selEnd }} WIB</p>
+                        <div class="time-slots" id="timeSlots"></div>
+                        <p class="form-hint" id="slotEmptyNote" style="display:none; color:#B7791F; font-size:13px; margin-top:10px;">Belum ada jam yang tersedia pada tanggal ini. Silakan pilih tanggal lain.</p>
+                        <p class="time-duration-note" id="timeDurationNote">Durasi {{ $selPkg['name'] ?? '' }}: {{ $selDur }} menit</p>
                     </div>
                 </div>
 
@@ -223,7 +167,7 @@
                         <img src="{{ asset('images/icon-calendar.svg') }}" alt="" class="summary-icon">
                         <div class="summary-item__text">
                             <span class="summary-label">Tanggal sesi</span>
-                            <strong class="summary-val" id="sumDate">Sabtu, 17 Oktober 2026</strong>
+                            <strong class="summary-val" id="sumDate">Pilih tanggal</strong>
                         </div>
                     </div>
 
@@ -231,7 +175,7 @@
                         <img src="{{ asset('images/icon-clock.svg') }}" alt="" class="summary-icon">
                         <div class="summary-item__text">
                             <span class="summary-label">Waktu sesi</span>
-                            <strong class="summary-val" id="sumTime">15.30–{{ $selEnd }} WIB · {{ $selDur }} menit</strong>
+                            <strong class="summary-val" id="sumTime">Pilih jam · {{ $selDur }} menit</strong>
                         </div>
                     </div>
 
@@ -306,7 +250,7 @@
                         </div>
 
                         <div class="form-group">
-                            <label for="catatan" class="form-label">Catatan untuk Clara (opsional)</label>
+                            <label for="catatan" class="form-label">Catatan untuk studio (opsional)</label>
                             <textarea id="catatan" name="catatan" rows="4" class="form-control form-textarea" placeholder="Ceritakan konsep atau preferensi suasana yang Anda inginkan...">{{ old('catatan') }}</textarea>
                         </div>
                     </div>
@@ -325,7 +269,7 @@
                         </button>
 
                         <p class="form-disclaimer-text">
-                            Setelah permintaan dikirim, kode pesanan dibuat dan ditampilkan di checkout serta dikirim ke email atau WhatsApp Anda. Simpan kode untuk mengecek status. Clara akan meninjau ketersediaan sebelum mengonfirmasi sesi.
+                            Setelah permintaan dikirim, kode pesanan dibuat dan ditampilkan di checkout serta dikirim ke email atau WhatsApp Anda. Simpan kode untuk mengecek status. Tim studio akan meninjau ketersediaan sebelum mengonfirmasi sesi.
                         </p>
                     </div>
                 </div>
@@ -335,11 +279,10 @@
 </main>
 
 {{-- SCRIPT INTERAKTIF PEMILIHAN PAKET, KALENDER, & WAKTU --}}
+<script type="application/json" id="calendar-data">@json($calendar)</script>
 <script>
 document.addEventListener('DOMContentLoaded', () => {
     const packageCards = document.querySelectorAll('.package-card-select');
-    const calDates = document.querySelectorAll('.cal-date.is-available');
-    const timeSlots = document.querySelectorAll('.time-slot-btn:not(.is-full)');
     const selectedDateInput = document.getElementById('selectedDateInput');
     
     // Elemen Ringkasan & Form Mirror
@@ -360,8 +303,8 @@ document.addEventListener('DOMContentLoaded', () => {
         duration: initCard ? parseInt(initCard.dataset.duration || 60) : 60,
         location: initCard ? initCard.dataset.location : ''
     };
-    let currentDateLabel = 'Sabtu, 17 Oktober 2026';
-    let currentTimeSlot = '15.30';
+    let currentDateLabel = 'Pilih tanggal';
+    let currentTimeSlot = '';
 
     function updateSummary() {
         if (sumPkg) sumPkg.textContent = currentPkg.name;
@@ -372,13 +315,16 @@ document.addEventListener('DOMContentLoaded', () => {
         if (timeDateDisplay) timeDateDisplay.textContent = currentDateLabel;
         
         // Jam selesai = jam mulai + durasi paket
-        const [startH, startM] = currentTimeSlot.split('.').map(n => parseInt(n, 10));
-        const endTotal = startH * 60 + startM + currentPkg.duration;
-        const endTime = String(Math.floor(endTotal / 60) % 24).padStart(2, '0') + '.' + String(endTotal % 60).padStart(2, '0');
-
-        const timeStr = `${currentTimeSlot}–${endTime} WIB · ${currentPkg.duration} menit`;
-        if (sumTime) sumTime.textContent = timeStr;
-        if (timeDurationNote) timeDurationNote.textContent = `Durasi ${currentPkg.name}: ${currentPkg.duration} menit · ${currentTimeSlot}–${endTime} WIB`;
+        if (currentTimeSlot) {
+            const [startH, startM] = currentTimeSlot.split('.').map(n => parseInt(n, 10));
+            const endTotal = startH * 60 + startM + currentPkg.duration;
+            const endTime = String(Math.floor(endTotal / 60) % 24).padStart(2, '0') + '.' + String(endTotal % 60).padStart(2, '0');
+            if (sumTime) sumTime.textContent = `${currentTimeSlot}–${endTime} WIB · ${currentPkg.duration} menit`;
+            if (timeDurationNote) timeDurationNote.textContent = `Durasi ${currentPkg.name}: ${currentPkg.duration} menit · ${currentTimeSlot}–${endTime} WIB`;
+        } else {
+            if (sumTime) sumTime.textContent = `Pilih jam · ${currentPkg.duration} menit`;
+            if (timeDurationNote) timeDurationNote.textContent = `Durasi ${currentPkg.name}: ${currentPkg.duration} menit`;
+        }
     }
 
     // Pemilihan Paket
@@ -407,40 +353,149 @@ document.addEventListener('DOMContentLoaded', () => {
             currentPkg.duration = parseInt(card.dataset.duration || 90);
             currentPkg.location = card.dataset.location;
 
-            updateSummary();
+            refreshCalendar();
         });
     });
 
-    // Pemilihan Tanggal Kalender
-    calDates.forEach(dateEl => {
-        dateEl.addEventListener('click', () => {
-            calDates.forEach(d => d.classList.remove('is-selected'));
-            dateEl.classList.add('is-selected');
-            
-            selectedDateInput.value = dateEl.dataset.date;
-            currentDateLabel = dateEl.dataset.label;
-            updateSummary();
-        });
-    });
+    // ===== Kalender & slot waktu dinamis (data nyata dari server) =====
+    const cal = JSON.parse(document.getElementById('calendar-data').textContent);
+    const MONTHS = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+    const DAYS = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
+    const calDatesEl = document.getElementById('calDates');
+    const timeSlotsEl = document.getElementById('timeSlots');
+    const slotEmptyNote = document.getElementById('slotEmptyNote');
+    const monthTitle = document.getElementById('currentMonthYear');
+    const prevBtn = document.getElementById('calPrev');
+    const nextBtn = document.getElementById('calNext');
 
-    // Pemilihan Slot Waktu
-    timeSlots.forEach(slot => {
-        slot.addEventListener('click', () => {
-            timeSlots.forEach(s => {
-                s.classList.remove('is-selected');
-                const st = s.querySelector('.slot-status');
-                if (st) st.textContent = 'Tersedia';
-            });
-            slot.classList.add('is-selected');
-            const st = slot.querySelector('.slot-status');
-            if (st) st.textContent = 'Dipilih';
-            const radio = slot.querySelector('.time-radio');
-            if (radio) {
-                radio.checked = true;
-                currentTimeSlot = radio.value;
+    const pad = n => String(n).padStart(2, '0');
+    const ymd = (y, m, d) => `${y}-${pad(m + 1)}-${pad(d)}`;
+    const parseYmd = str => { const [y, m, d] = str.split('-').map(Number); return { y, m: m - 1, d }; };
+    const labelOf = str => { const { y, m, d } = parseYmd(str); return `${DAYS[new Date(y, m, d).getDay()]}, ${d} ${MONTHS[m]} ${y}`; };
+    const avail = () => (cal.availability[String(currentPkg.duration)] || {});
+    const daySlots = str => avail()[str] || null;
+    const dayHasSlot = str => { const s = daySlots(str); return !!s && Object.values(s).includes('available'); };
+
+    let selectedDate = '';
+    let viewMonth = parseYmd(cal.min);   // bulan yang sedang tampil
+
+    function renderCalendar() {
+        monthTitle.textContent = `${MONTHS[viewMonth.m]} ${viewMonth.y}`;
+        calDatesEl.innerHTML = '';
+
+        const first = new Date(viewMonth.y, viewMonth.m, 1);
+        const lead = (first.getDay() + 6) % 7;               // Senin = kolom pertama
+        const daysInMonth = new Date(viewMonth.y, viewMonth.m + 1, 0).getDate();
+        const prevDays = new Date(viewMonth.y, viewMonth.m, 0).getDate();
+
+        for (let i = lead - 1; i >= 0; i--) {
+            const c = document.createElement('div');
+            c.className = 'cal-date is-disabled';
+            c.textContent = prevDays - i;
+            calDatesEl.appendChild(c);
+        }
+        for (let d = 1; d <= daysInMonth; d++) {
+            const str = ymd(viewMonth.y, viewMonth.m, d);
+            const c = document.createElement('div');
+            c.textContent = d;
+            if (dayHasSlot(str)) {
+                c.className = 'cal-date is-available' + (str === selectedDate ? ' is-selected' : '');
+                c.dataset.date = str;
+                c.dataset.label = labelOf(str);
+                c.setAttribute('role', 'button');
+                c.tabIndex = 0;
+                c.addEventListener('click', () => selectDate(str));
+                c.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectDate(str); } });
+            } else {
+                c.className = 'cal-date is-disabled';
+                if (str === cal.today) c.title = 'Hari ini';
             }
-            updateSummary();
+            calDatesEl.appendChild(c);
+        }
+        const total = lead + daysInMonth;
+        for (let i = 1; i <= (7 - (total % 7)) % 7; i++) {
+            const c = document.createElement('div');
+            c.className = 'cal-date is-disabled';
+            c.textContent = i;
+            calDatesEl.appendChild(c);
+        }
+
+        // Navigasi bulan hanya dalam rentang yang bisa dipesan
+        const min = parseYmd(cal.min), max = parseYmd(cal.max);
+        const idx = o => o.y * 12 + o.m;
+        prevBtn.disabled = idx(viewMonth) <= idx(min);
+        nextBtn.disabled = idx(viewMonth) >= idx(max);
+        prevBtn.style.opacity = prevBtn.disabled ? '.35' : '1';
+        nextBtn.style.opacity = nextBtn.disabled ? '.35' : '1';
+    }
+
+    function renderSlots() {
+        timeSlotsEl.innerHTML = '';
+        const slots = selectedDate ? daySlots(selectedDate) : null;
+        slotEmptyNote.style.display = 'none';
+        if (!slots) { selectedTimeInit(''); return; }
+
+        let chosen = currentTimeSlot && slots[currentTimeSlot] === 'available' ? currentTimeSlot : '';
+        if (!chosen) chosen = Object.keys(slots).find(k => slots[k] === 'available') || '';
+        currentTimeSlot = chosen;
+
+        Object.keys(slots).forEach(time => {
+            if (slots[time] === 'available') {
+                const label = document.createElement('label');
+                label.className = 'time-slot-btn' + (time === chosen ? ' is-selected' : '');
+                label.innerHTML = `<input type="radio" name="session_time" value="${time}" class="sr-only time-radio"${time === chosen ? ' checked' : ''}>` +
+                    `<span class="slot-time">${time}</span><span class="slot-status">${time === chosen ? 'Dipilih' : 'Tersedia'}</span>`;
+                label.addEventListener('click', () => { currentTimeSlot = time; renderSlots(); updateSummary(); });
+                timeSlotsEl.appendChild(label);
+            } else {
+                const div = document.createElement('div');
+                div.className = 'time-slot-btn is-full';
+                div.innerHTML = `<span class="slot-time">${time}</span><span class="slot-status">${slots[time] === 'blocked' ? 'Tidak tersedia' : 'Penuh'}</span>`;
+                timeSlotsEl.appendChild(div);
+            }
         });
+        if (!chosen) slotEmptyNote.style.display = 'block';
+    }
+    function selectedTimeInit(v) { currentTimeSlot = v; }
+
+    function selectDate(str) {
+        selectedDate = str;
+        selectedDateInput.value = str;
+        currentDateLabel = labelOf(str);
+        renderCalendar();
+        renderSlots();
+        updateSummary();
+    }
+
+    // Hitung ulang saat paket berganti (durasi berbeda = ketersediaan berbeda)
+    function refreshCalendar() {
+        if (!selectedDate || !dayHasSlot(selectedDate)) {
+            selectedDate = '';
+            const allDates = Object.keys(avail()).filter(dayHasSlot);
+            const keep = cal.oldDate && dayHasSlot(cal.oldDate) ? cal.oldDate : (allDates[0] || '');
+            if (keep) { selectedDate = keep; viewMonth = parseYmd(keep); }
+        }
+        selectedDateInput.value = selectedDate;
+        currentDateLabel = selectedDate ? labelOf(selectedDate) : 'Pilih tanggal';
+        renderCalendar();
+        renderSlots();
+        updateSummary();
+    }
+
+    prevBtn.addEventListener('click', () => { viewMonth = { y: viewMonth.m === 0 ? viewMonth.y - 1 : viewMonth.y, m: (viewMonth.m + 11) % 12, d: 1 }; renderCalendar(); });
+    nextBtn.addEventListener('click', () => { viewMonth = { y: viewMonth.m === 11 ? viewMonth.y + 1 : viewMonth.y, m: (viewMonth.m + 1) % 12, d: 1 }; renderCalendar(); });
+
+    if (cal.oldTime) currentTimeSlot = cal.oldTime;
+    refreshCalendar();
+
+    // Cegah kirim bila belum memilih tanggal & jam yang tersedia
+    document.getElementById('bookingForm').addEventListener('submit', e => {
+        if (!selectedDateInput.value || !currentTimeSlot) {
+            e.preventDefault();
+            slotEmptyNote.textContent = 'Pilih tanggal dan jam yang tersedia terlebih dahulu.';
+            slotEmptyNote.style.display = 'block';
+            document.getElementById('currentMonthYear').scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
     });
 
     // Format Otomatis Nomor WhatsApp (Number only & 08 -> +62 8)

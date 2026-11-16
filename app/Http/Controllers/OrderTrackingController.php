@@ -20,7 +20,7 @@ class OrderTrackingController extends Controller
         $notFound = false;
 
         if ($searchCode !== '') {
-            $candidate = Order::with('latestPayment')->where(function ($q) use ($searchCode) {
+            $candidate = Order::with(['latestPayment', 'package'])->where(function ($q) use ($searchCode) {
                 $q->where('order_code', $searchCode)
                   ->orWhere('invoice_number', $searchCode);
             })->first();
@@ -34,7 +34,7 @@ class OrderTrackingController extends Controller
         } elseif (session()->has('last_booking')) {
             $sess = session('last_booking');
             if (isset($sess['order_code'])) {
-                $order = Order::with('latestPayment')->where('order_code', $sess['order_code'])->first();
+                $order = Order::with(['latestPayment', 'package'])->where('order_code', $sess['order_code'])->first();
             }
         }
 
@@ -67,28 +67,31 @@ class OrderTrackingController extends Controller
         $maskedEmail = $this->maskEmail($rawEmail);
         $maskedPhone = $this->maskPhone($rawPhone);
 
+        $package = $order ? $order->package : null;
+        $range = $order ? \App\Support\Studio::parseRange($order->session_time_slot) : null;
+
         $data = [
             'order_code' => $order ? $order->order_code : 'CH-CONTOH-001',
             'invoice_number' => $order ? $order->invoice_number : 'INV-CH-2026-001',
             'package_name' => $order ? $order->package_name : 'Prewedding',
-            'package_price' => $order ? 'Rp' . number_format($order->total_price, 0, ',', '.') : 'Rp9.500.000',
-            'package_image' => 'paket-2.jpg',
-            'package_duration' => 90,
-            'package_desc' => '',
-            'lokasi_hint' => 'Dua lokasi termasuk dalam paket. Alamat dan lokasi akhir dibahas saat perencanaan.',
-            'package_items' => [
-                'Dua lokasi dan dua ganti kostum',
-                '50 foto diedit dengan hati-hati',
-                'Panggilan perencanaan & panduan styling',
-                'Galeri pribadi + izin cetak',
+            'package_price' => $order ? 'Rp' . number_format($order->total_price, 0, ',', '.') : 'Rp2.000.000',
+            'package_image' => $package ? $package->imageSource() : 'paket-2.jpg',
+            'package_duration' => $range ? ($range[1] - $range[0]) : 120,
+            'package_desc' => $package ? (string) $package->description : '',
+            'lokasi_hint' => 'Lokasi sesi dibahas saat perencanaan. Biaya transport di luar harga paket.',
+            'package_items' => $package && is_array($package->features) ? $package->features : [
+                'Durasi Foto: 2 Jam',
+                '30 Edited Photo',
+                'All Photo via Google Drive',
+                'Pengerjaan: 7-10 hari kerja',
             ],
-            'session_date' => $order && $order->session_date ? $order->session_date->format('l, d F Y') : 'Sabtu, 17 Oktober 2026',
-            'session_time' => $order ? $order->session_time_slot : '15.30–17.00 WIB · 90 menit',
+            'session_date' => $order && $order->session_date ? \App\Support\Studio::dateLabel($order->session_date) : 'Sabtu, 21 November 2026',
+            'session_time' => $order ? $order->session_time_slot : '09.00–11.00 WIB · 120 menit',
             'nama_lengkap' => $order ? $order->customer_name : 'Ayu Pramesti',
             'email' => $rawEmail,
             'whatsapp' => $rawPhone,
-            'lokasi' => $order ? $order->location : 'Rumah keluarga di Jakarta Selatan & taman terdekat',
-            'catatan' => $order ? $order->customer_notes : 'Kami ingin mengabadikan momen bersama kedua anak kami.',
+            'lokasi' => $order ? $order->location : 'Studio Naro Capture',
+            'catatan' => $order ? $order->customer_notes : 'Contoh catatan pemesan.',
         ];
 
         $hasSearched = $order !== null || (!empty($manualStatus) && !$notFound);

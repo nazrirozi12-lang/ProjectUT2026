@@ -19,10 +19,14 @@ class Gallery extends Model
         'status',
         'access_type',
         'pin_code',
+        'drive_url',
+        'photo_count',
+        'notes',
     ];
 
     protected $casts = [
         'target_photos' => 'integer',
+        'photo_count' => 'integer',
     ];
 
     public function order()

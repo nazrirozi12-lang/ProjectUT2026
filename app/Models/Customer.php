@@ -18,6 +18,14 @@ class Customer extends Model
         'status',
     ];
 
+    public static function findByCodeOrFail(string|int $key): self
+    {
+        return static::query()
+            ->where('customer_code', (string) $key)
+            ->when(ctype_digit((string) $key), fn ($q) => $q->orWhere('id', (int) $key))
+            ->firstOrFail();
+    }
+
     public function orders()
     {
         return $this->hasMany(Order::class);
