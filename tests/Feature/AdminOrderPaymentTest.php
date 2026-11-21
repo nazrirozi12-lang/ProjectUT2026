@@ -181,7 +181,7 @@ class AdminOrderPaymentTest extends TestCase
 
         $this->post('/pemesanan', [
             'package_id' => 'prewedding', 'session_date' => '2026-12-05', 'session_time' => '13.00',
-            'nama_lengkap' => 'Uji Bukti', 'email' => 'bukti@example.com', 'whatsapp' => '0812',
+            'nama_lengkap' => 'Uji Bukti', 'email' => 'bukti@example.com', 'whatsapp' => '0812 3456 7890', 'lokasi' => 'Studio', 'persetujuan' => 1,
         ])->assertRedirect(route('checkout'));
         $order = Order::where('customer_email', 'bukti@example.com')->first();
 
@@ -241,5 +241,43 @@ class AdminOrderPaymentTest extends TestCase
         $this->asAdmin()->get('/admin/pembayaran')->assertOk()->assertSee('Bukti terkirim (')->assertDontSee('Rp23.500.000');
         $this->asAdmin()->get('/admin/pembayaran?tab=belum-dibayar')->assertOk()->assertSee($o2->order_code);
         $this->asAdmin()->get('/admin/pembayaran?tab=bukti-terkirim&q=' . $o1->customer_name)->assertOk()->assertSee('BYR-UJI-' . $o1->id);
+    }
+
+    public function test_hapus_pesanan_hanya_untuk_sesi_selain_dikonfirmasi_dan_selesai(): void
+    {
+        foreach (['Dikonfirmasi', 'Selesai'] as $status) {
+            $o = $this->makeOrder(['session_status' => $status]);
+            $this->asAdmin()->delete("/admin/pesanan/{$o->order_code}")->assertSessionHas('error');
+            $this->assertNotNull(Order::find($o->id), "{$status} tidak boleh terhapus");
+        }
+        // arsip dari sesi selesai juga terlindungi
+        $arsip = $this->makeOrder(['session_status' => 'Diarsipkan', 'completed_at' => now()]);
+        $this->asAdmin()->delete("/admin/pesanan/{$arsip->order_code}")->assertSessionHas('error');
+        $this->assertNotNull(Order::find($arsip->id));
+
+        // Permintaan, Dibatalkan, dan arsip hasil pembatalan boleh dihapus (pembayaran ikut terhapus)
+        $req = $this->makeOrder(['payment_status' => 'Bukti terkirim']);
+        $this->makePayment($req);
+        $this->asAdmin()->delete("/admin/pesanan/{$req->order_code}")->assertRedirect(route('admin.pesanan'))->assertSessionHas('success');
+        $this->assertNull(Order::find($req->id));
+        $this->assertSame(0, Payment::where('order_id', $req->id)->count());
+
+        $batal = $this->makeOrder(['session_status' => 'Dibatalkan']);
+        $this->asAdmin()->delete("/admin/pesanan/{$batal->order_code}")->assertSessionHas('success');
+        $this->assertNull(Order::find($batal->id));
+    }
+
+    public function test_tombol_hapus_tampil_sesuai_aturan_dan_slot_kembali_tersedia(): void
+    {
+        $req = $this->makeOrder(['session_date' => '2026-12-12']);
+        $conf = $this->makeOrder(['session_status' => 'Dikonfirmasi', 'session_date' => '2026-12-13']);
+
+        $this->asAdmin()->get('/admin/pesanan')->assertOk()->assertSee('data-code="' . $req->order_code . '"', false)->assertDontSee('data-code="' . $conf->order_code . '"', false);
+        $this->asAdmin()->get("/admin/pesanan/{$req->order_code}")->assertSee('Hapus pesanan');
+        $this->asAdmin()->get("/admin/pesanan/{$conf->order_code}")->assertDontSee('id="btn-open-delete-order"', false)->assertSee('tidak dapat dihapus');
+
+        $this->assertFalse(\App\Support\Studio::isAvailable('2026-12-12', '09.00', 120));
+        $this->asAdmin()->delete("/admin/pesanan/{$req->order_code}");
+        $this->assertTrue(\App\Support\Studio::isAvailable('2026-12-12', '09.00', 120));
     }
 }

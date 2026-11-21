@@ -221,9 +221,40 @@
                 @elseif ($order['session_status'] !== 'Diarsipkan')
                     <span class="admin-meta-hint">Pesanan dapat diarsipkan setelah sesi selesai atau dibatalkan.</span>
                 @endif
+
+                @if ($order['can_delete'])
+                    <button type="button" class="admin-btn-outline btn-outline-danger w-full" id="btn-open-delete-order">Hapus pesanan</button>
+                @else
+                    <span class="admin-meta-hint">{{ $order['delete_hint'] }}</span>
+                @endif
             </div>
         </div>
     </div>
+
+    {{-- MODAL HAPUS PESANAN --}}
+    @if ($order['can_delete'])
+    <div class="admin-modal-overlay" id="modal-delete-order">
+        <div class="admin-modal-dialog">
+            <div class="admin-modal-header">
+                <h3 class="admin-modal-title">Hapus pesanan?</h3>
+                <button type="button" class="admin-btn-close-modal" data-close="modal-delete-order">×</button>
+            </div>
+            <p class="admin-modal-subtitle">{{ $order['code'] }} · {{ $order['customer'] }}</p>
+            <hr class="divider">
+            <div class="admin-alert-box alert-warning-box">
+                <strong class="admin-alert-title text-gold">Tindakan ini permanen</strong>
+                <p class="admin-alert-desc text-gold">Pesanan dan seluruh data pembayarannya (termasuk bukti transfer) akan dihapus dan tidak dapat dikembalikan. Slot jadwal kembali tersedia untuk pelanggan.</p>
+            </div>
+            <hr class="divider">
+            <form action="{{ route('admin.pesanan.hapus', ['id' => $order['code']]) }}" method="POST" class="admin-modal-actions">
+                @csrf
+                @method('DELETE')
+                <button type="button" class="admin-btn-outline" data-close="modal-delete-order">Batal</button>
+                <button type="submit" class="admin-btn-primary" style="background:#D32F2F; border-color:#D32F2F;">Ya, hapus pesanan</button>
+            </form>
+        </div>
+    </div>
+    @endif
 
     {{-- MODAL DIALOG BATALKAN PESANAN (FIGMA 141:1411) --}}
     <div class="admin-modal-overlay" id="modal-cancel-order">
@@ -395,6 +426,7 @@
 
             bindModal('btn-open-cancel-order', 'modal-cancel-order');
             bindModal('btn-open-archive-order', 'modal-archive-order');
+            bindModal('btn-open-delete-order', 'modal-delete-order');
             bindModal('btn-open-edit-order', 'modal-edit-order');
             @if ($errors->has('session_date') || $errors->has('session_time') || $errors->has('location'))
                 document.getElementById('modal-edit-order')?.classList.add('is-open');

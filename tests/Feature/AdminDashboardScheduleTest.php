@@ -89,7 +89,7 @@ class AdminDashboardScheduleTest extends TestCase
 
         $this->post('/pemesanan', [
             'package_id' => 'prewedding', 'session_date' => '2026-11-25', 'session_time' => '09.00',
-            'nama_lengkap' => 'X', 'email' => 'x@example.com', 'whatsapp' => '08',
+            'nama_lengkap' => 'Xavier', 'email' => 'x@example.com', 'whatsapp' => '0812 3456 7890', 'lokasi' => 'Studio', 'persetujuan' => 1,
         ])->assertSessionHasErrors('session_date');
 
         // blokir jam tertentu hanya menutup slot yang beririsan

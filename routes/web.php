@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\BookingController;
 use App\Http\Controllers\OrderTrackingController;
 use App\Http\Controllers\AdminCustomerController;
+use App\Http\Controllers\ClientGalleryController;
 use App\Http\Controllers\AdminDashboardController;
 use App\Http\Controllers\AdminGalleryController;
 use App\Http\Controllers\AdminOrderController;
@@ -36,6 +37,23 @@ Route::get('/', function () {
             ['image' => 'work-6.jpg', 'height' => 300, 'title' => 'Birthday', 'category' => 'Ulang Tahun'],
         ],
     ];
+
+    // Galeri terbuka yang sudah diterbitkan menggantikan foto contoh (terbaru lebih dulu)
+    $openGalleries = \App\Models\Gallery::query()
+        ->where('status', 'Diterbitkan')->where('access_type', 'Terbuka')->whereHas('photos')
+        ->latest('id')->take(6)->get();
+    $slotOrder = [[0, 0], [1, 0], [2, 0], [0, 1], [1, 1], [2, 1]];
+    foreach ($openGalleries as $i => $g) {
+        $coverId = \App\Models\GalleryPhoto::where('gallery_id', $g->id)->orderBy('sort_order')->orderBy('id')->value('id');
+        [$col, $row] = $slotOrder[$i];
+        $columns[$col][$row] = [
+            'image' => route('galeri-klien.foto', ['slug' => $g->slug, 'photo' => $coverId]),
+            'height' => $columns[$col][$row]['height'],
+            'title' => $g->title,
+            'category' => 'Galeri',
+            'url' => route('galeri-klien', ['slug' => $g->slug]),
+        ];
+    }
 
     // Ambil dari database dengan fallback
     $dbPackages = Package::where('is_active', true)->get();
@@ -108,23 +126,9 @@ Route::post('/konfirmasi-pembayaran', [BookingController::class, 'storePaymentCo
 Route::get('/cek-pesanan', [OrderTrackingController::class, 'show'])->name('cek-pesanan');
 
 // Galeri Klien Publik
-Route::get('/galeri-klien', function () {
-    $data = session('last_booking', [
-        'order_code' => 'CH-CONTOH-001',
-        'invoice_number' => 'INV-CH-2026-001',
-        'package_name' => 'Prewedding',
-        'nama_lengkap' => 'Ayu Pramesti',
-        'session_date' => 'Sabtu, 17 Oktober 2026',
-        'session_time' => '15.30–17.00 WIB · 90 menit',
-        'lokasi' => 'Rumah keluarga di Jakarta Selatan & taman terdekat',
-    ]);
-
-    $maskedEmail = 'a•••@gmail.com';
-    $maskedPhone = '+62 8•• •••• 7890';
-
-    return view('galeri-klien', compact('data', 'maskedEmail', 'maskedPhone'));
-})->name('galeri-klien');
-
+Route::get('/galeri-klien', [ClientGalleryController::class, 'show'])->name('galeri-klien');
+Route::post('/galeri-klien/pin', [ClientGalleryController::class, 'unlock'])->middleware('throttle:30,1')->name('galeri-klien.pin');
+Route::get('/galeri-klien/{slug}/foto/{photo}/{variant?}', [ClientGalleryController::class, 'photo'])->whereNumber('photo')->name('galeri-klien.foto');
 /*
 |--------------------------------------------------------------------------
 | Admin Backoffice Routes
@@ -148,6 +152,7 @@ Route::prefix('admin')->group(function () {
         Route::get('/pesanan', [AdminOrderController::class, 'index'])->name('admin.pesanan');
         Route::get('/pesanan/{id}', [AdminOrderController::class, 'show'])->name('admin.pesanan.detail');
         Route::put('/pesanan/{id}', [AdminOrderController::class, 'update'])->name('admin.pesanan.update');
+        Route::delete('/pesanan/{id}', [AdminOrderController::class, 'destroy'])->name('admin.pesanan.hapus');
         Route::post('/pesanan/{id}/selesai-sesi', [AdminOrderController::class, 'selesaikanSesi'])->name('admin.pesanan.selesai-sesi');
         Route::post('/pesanan/{id}/konfirmasi-sesi', [AdminOrderController::class, 'konfirmasiSesi'])->name('admin.pesanan.konfirmasi-sesi');
         Route::post('/pesanan/{id}/batalkan-sesi', [AdminOrderController::class, 'batalkanSesi'])->name('admin.pesanan.batalkan-sesi');
@@ -185,6 +190,11 @@ Route::prefix('admin')->group(function () {
 
         // Galeri
         Route::get('/galeri', [AdminGalleryController::class, 'index'])->name('admin.galeri');
+        Route::get('/galeri/{id}', [AdminGalleryController::class, 'show'])->whereNumber('id')->name('admin.galeri.lihat');
+        Route::post('/galeri/{id}/foto', [AdminGalleryController::class, 'uploadPhoto'])->name('admin.galeri.foto.unggah');
+        Route::get('/galeri/{id}/foto/{photo}/{variant?}', [AdminGalleryController::class, 'photoImage'])->name('admin.galeri.foto');
+        Route::delete('/galeri/{id}/foto/{photo}', [AdminGalleryController::class, 'deletePhoto'])->name('admin.galeri.foto.hapus');
+        Route::post('/galeri/{id}/foto/{photo}/sampul', [AdminGalleryController::class, 'coverPhoto'])->name('admin.galeri.foto.sampul');
         Route::post('/galeri', [AdminGalleryController::class, 'store'])->name('admin.galeri.simpan');
         Route::put('/galeri/{id}', [AdminGalleryController::class, 'update'])->name('admin.galeri.update');
         Route::delete('/galeri/{id}', [AdminGalleryController::class, 'destroy'])->name('admin.galeri.hapus');

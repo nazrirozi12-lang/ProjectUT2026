@@ -141,7 +141,7 @@
 
                 {{-- Tombol Aksi: Lihat Status Pesanan --}}
                 <div class="form-actions-wrap">
-                    <a href="{{ route('cek-pesanan', ['kode' => $data['order_code'] ?? 'CH-CONTOH-001']) }}" class="btn btn--fill btn--block btn--lg">
+                    <a href="{{ route('cek-pesanan', ['kode' => $data['order_code'], 'kontak' => $data['email']]) }}" class="btn btn--fill btn--block btn--lg">
                         Lihat Status Pesanan @include('partials.arrow')
                     </a>
                     <p class="proof-footer-note">
@@ -151,27 +151,27 @@
             </div>
         @else
             {{-- FORMULIR KONFIRMASI PEMBAYARAN (SEBELUM DIKIRIM) --}}
+            @if (!empty($needsFix))
+                <div class="summary-notice" style="margin-bottom: 20px; border-left: 4px solid #B7791F;">
+                    <img src="{{ asset('images/icon-info.svg') }}" alt="" class="notice-icon">
+                    <p>
+                        <strong>Studio meminta perbaikan bukti pembayaran.</strong><br>
+                        {{ $fixMessage ?: 'Mohon unggah kembali bukti transfer yang jelas dan sesuai nominal invoice.' }}
+                        <br>Unggah bukti yang baru di formulir di bawah ini. Tidak perlu membuat pesanan ulang.
+                    </p>
+                </div>
+            @endif
             <div class="checkout-box form-confirmation-card">
                 {{-- BLOK TUJUAN PEMBAYARAN: TERKUNCI SESUAI PILIHAN DI CHECKOUT --}}
                 <div class="payment-destination-box">
                     <div class="destination-header">
                         <div>
-                            <span class="eyebrow">METODE PEMBAYARAN TERPILIH</span>
-                            <h3 class="destination-title">
-                                @if($metode === 'qris')
-                                    QRIS (Scan QR Code)
-                                @else
-                                    Transfer Bank
-                                @endif
-                            </h3>
+                            <span class="eyebrow">METODE PEMBAYARAN</span>
+                            <h3 class="destination-title">Transfer Bank</h3>
                         </div>
-                        <a href="{{ route('checkout') }}" class="link-change-method">
-                            Ubah metode pembayaran
-                        </a>
                     </div>
 
-                    @if($metode === 'transfer')
-                        {{-- HANYA TRANSFER BANK --}}
+                    {{-- TRANSFER BANK --}}
                         <div class="pay-method-locked-content">
                             <p class="body-text font-13">Silakan transfer sesuai nominal invoice ke salah satu rekening resmi studio di bawah ini:</p>
                             
@@ -215,29 +215,6 @@
                                 </div>
                             </div>
                         </div>
-                    @else
-                        {{-- HANYA QRIS --}}
-                        <div class="pay-method-locked-content">
-                            <div class="qris-display-card">
-                                <div class="qris-qr-frame">
-                                    <div class="qris-header-tag">QRIS · National QR Standard</div>
-                                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=00020101021226500014ID.LINKAJA.WWW01189360091200000000015204581253033605802ID5919CLARA+HAYES+STUDIO6007JAKARTA61051219062070703A016304C2E4" alt="QRIS Naro Capture" class="qris-code-img">
-                                    <span class="qris-merchant-name">NARO CAPTURE</span>
-                                    <span class="qris-merchant-nns">NMID: ID1020039281749</span>
-                                </div>
-                                <div class="qris-instructions">
-                                    <h4 class="font-14 font-semibold">Cara Pembayaran QRIS:</h4>
-                                    <ol class="qris-steps-list">
-                                        <li>Buka aplikasi m-Banking (BCA, Mandiri, BRI, BNI) atau e-Wallet (GoPay, OVO, Dana, ShopeePay).</li>
-                                        <li>Pilih menu <strong>Pindai / Scan QRIS</strong>.</li>
-                                        <li>Arahkan kamera ke kode QR di samping.</li>
-                                        <li>Pastikan nama merchant: <strong>NARO CAPTURE</strong> dan nominal transfer: <strong>{{ $data['package_price'] }}</strong>.</li>
-                                        <li>Selesaikan pembayaran dan simpan tangkapan layar (screenshot) bukti transfer.</li>
-                                    </ol>
-                                </div>
-                            </div>
-                        </div>
-                    @endif
                 </div>
 
                 <hr class="divider">
@@ -248,16 +225,19 @@
                         <span class="form-required-note">* Wajib diisi</span>
                     </div>
                     <p class="body-text">
-                        Setelah berhasil melakukan transfer atau scan QRIS di atas, unggah struk atau tangkapan layar pembayaran di bawah ini.
+                        Setelah berhasil melakukan transfer di atas, unggah struk atau tangkapan layar pembayaran di bawah ini.
                     </p>
                 </div>
 
                 <form action="{{ route('konfirmasi.store') }}" method="POST" enctype="multipart/form-data" id="confirmPaymentForm">
                     @csrf
+                    <input type="hidden" name="kode" value="{{ $data['order_code'] }}">
+                    <input type="hidden" name="kontak" value="{{ $data['email'] }}">
 
                     {{-- Area Upload Bukti Pembayaran dengan Live Preview --}}
                     <div class="form-group">
                         <label class="form-label">Struk pembayaran *</label>
+                        @error('struk_pembayaran')<p class="form-error">{{ $message }}</p>@enderror
                         <div class="upload-dropzone-container">
                             <input type="file" name="struk_pembayaran" id="strukFile" class="sr-only" accept=".jpg,.jpeg,.png,.pdf" onchange="handleFileSelected(this)" required>
                             
@@ -328,41 +308,45 @@
                         <div class="form-group">
                             <label for="nama_pengirim" class="form-label">Nama pengirim *</label>
                             <div class="input-locked-wrap">
-                                <input type="text" id="nama_pengirim" name="nama_pengirim" class="form-control" placeholder="Nama pemilik rekening atau sumber pembayaran" required>
+                                <input type="text" id="nama_pengirim" name="nama_pengirim" class="form-control" placeholder="Nama pemilik rekening atau sumber pembayaran" value="{{ old('nama_pengirim', $data['nama_lengkap']) }}" required minlength="3" maxlength="100">
                                 <img src="{{ asset('images/icon-lock.svg') }}" alt="" class="input-lock-icon d-none" id="lockIconNama">
                             </div>
+                            @error('nama_pengirim')<p class="form-error">{{ $message }}</p>@enderror
                         </div>
 
                         <div class="form-row-2">
                             <div class="form-group">
                                 <label for="tanggal_transfer" class="form-label">Tanggal transfer *</label>
                                 <div class="input-locked-wrap">
-                                    <input type="date" id="tanggal_transfer" name="tanggal_transfer" class="form-control" value="{{ date('Y-m-d') }}" required>
+                                    <input type="date" id="tanggal_transfer" name="tanggal_transfer" class="form-control" value="{{ old('tanggal_transfer', date('Y-m-d')) }}" max="{{ date('Y-m-d') }}" required>
                                     <img src="{{ asset('images/icon-lock.svg') }}" alt="" class="input-lock-icon d-none" id="lockIconTanggal">
                                 </div>
+                                @error('tanggal_transfer')<p class="form-error">{{ $message }}</p>@enderror
                             </div>
                             <div class="form-group">
                                 <label for="bank_sumber" class="form-label">Bank / sumber pembayaran *</label>
                                 <div class="input-locked-wrap">
-                                    <input type="text" id="bank_sumber" name="bank_sumber" class="form-control" placeholder="Contoh: BCA / Mandiri / GoPay" required>
+                                    <input type="text" id="bank_sumber" name="bank_sumber" class="form-control" placeholder="Contoh: BCA / Mandiri / GoPay" value="{{ old('bank_sumber') }}" required maxlength="100">
                                     <img src="{{ asset('images/icon-lock.svg') }}" alt="" class="input-lock-icon d-none" id="lockIconBank">
                                 </div>
+                                @error('bank_sumber')<p class="form-error">{{ $message }}</p>@enderror
                             </div>
                         </div>
 
                         <div class="form-group">
                             <label for="nominal" class="form-label">Nominal yang dibayarkan (Rp) *</label>
                             <div class="input-locked-wrap">
-                                <input type="text" id="nominal" name="nominal" class="form-control" placeholder="Masukkan nominal sesuai struk" value="{{ $data['package_price'] }}" required>
+                                <input type="text" id="nominal" name="nominal" class="form-control" placeholder="Masukkan nominal sesuai struk" value="{{ old('nominal', $data['package_price']) }}" required inputmode="numeric" maxlength="20">
                                 <img src="{{ asset('images/icon-lock.svg') }}" alt="" class="input-lock-icon d-none" id="lockIconNominal">
                             </div>
+                            @error('nominal')<p class="form-error">{{ $message }}</p>@enderror
                             <span class="form-helper-text">Total pada invoice: {{ $data['package_price'] }}. Masukkan jumlah yang benar-benar Anda transfer.</span>
                         </div>
 
                         <div class="form-group">
                             <label for="catatan_pembayaran" class="form-label">Catatan pembayaran (opsional)</label>
                             <div class="input-locked-wrap">
-                                <textarea id="catatan_pembayaran" name="catatan_pembayaran" rows="3" class="form-control form-textarea" placeholder="Tambahkan informasi yang membantu studio memeriksa pembayaran Anda."></textarea>
+                                <textarea id="catatan_pembayaran" name="catatan_pembayaran" rows="3" class="form-control form-textarea" placeholder="Tambahkan informasi yang membantu studio memeriksa pembayaran Anda." maxlength="1000">{{ old('catatan_pembayaran') }}</textarea>
                                 <img src="{{ asset('images/icon-lock.svg') }}" alt="" class="input-lock-icon d-none" id="lockIconCatatan" style="top: 14px;">
                             </div>
                         </div>

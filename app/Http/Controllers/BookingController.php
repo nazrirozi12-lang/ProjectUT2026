@@ -99,12 +99,26 @@ class BookingController extends Controller
             'package_id' => ['required', 'string', Rule::exists('packages', 'slug')->where('is_active', true)],
             'session_date' => ['required', 'date_format:Y-m-d'],
             'session_time' => ['required', 'string'],
-            'nama_lengkap' => 'required|string|max:255',
-            'email' => 'required|email|max:255',
-            'whatsapp' => 'required|string|max:50',
-            'lokasi' => 'nullable|string|max:255',
+            'nama_lengkap' => ['required', 'string', 'min:3', 'max:100', 'regex:/^[\pL][\pL\s.\x27\-]*$/u'],
+            'email' => 'required|email:rfc|max:255',
+            'whatsapp' => ['required', 'string', 'max:25', 'regex:/^\+?[0-9][0-9\s\-]{6,22}[0-9]$/', function ($attribute, $value, $fail) {
+                $digits = strlen(preg_replace('/\D+/', '', (string) $value));
+                if ($digits < 9 || $digits > 15) {
+                    $fail('Nomor WhatsApp harus terdiri dari 9–15 digit.');
+                }
+            }],
+            'lokasi' => 'required|string|min:3|max:255',
             'catatan' => 'nullable|string|max:2000',
+            'persetujuan' => 'accepted',
         ], [
+            'nama_lengkap.min' => 'Nama lengkap minimal 3 karakter.',
+            'nama_lengkap.max' => 'Nama lengkap terlalu panjang (maksimal 100 karakter).',
+            'nama_lengkap.regex' => 'Nama lengkap hanya boleh berisi huruf, spasi, titik, apostrof, atau tanda hubung.',
+            'whatsapp.regex' => 'Format nomor WhatsApp tidak valid. Contoh: 0812 3456 7890 atau +62 812 3456 7890.',
+            'whatsapp.max' => 'Nomor WhatsApp terlalu panjang.',
+            'lokasi.required' => 'Lokasi sesi wajib diisi.',
+            'lokasi.min' => 'Lokasi sesi minimal 3 karakter.',
+            'persetujuan.accepted' => 'Centang persetujuan Kebijakan Privasi dan Syarat Pemesanan untuk melanjutkan.',
             'package_id.required' => 'Pilih salah satu paket layanan.',
             'package_id.exists' => 'Paket yang dipilih tidak tersedia.',
             'session_date.required' => 'Pilih tanggal sesi pada kalender.',
@@ -170,33 +184,14 @@ class BookingController extends Controller
             'total_price' => $packagePrice,
             'session_date' => $sessionDateSql,
             'session_time_slot' => $timeSlotLabel,
-            'location' => $validated['lokasi'] ?? 'Studio Utama Naro Capture',
+            'location' => $validated['lokasi'],
             'customer_notes' => $validated['catatan'] ?? null,
             'session_status' => 'Permintaan',
             'payment_status' => 'Belum dibayar',
         ]);
 
-        // Simpan juga ke session untuk aliran UX instan tanpa login
-        session(['last_booking' => [
-            'order_id' => $order->id,
-            'order_code' => $order->order_code,
-            'invoice_number' => $order->invoice_number,
-            'package_id' => $packageSlug,
-            'package_name' => $order->package_name,
-            'package_price' => $packagePriceFormatted,
-            'package_raw_price' => $packagePrice,
-            'package_image' => $packageImage,
-            'package_desc' => $packageDesc,
-            'package_items' => $packageItems,
-            'lokasi_hint' => $lokasiHint,
-            'session_date' => Studio::dateLabel($sessionDateSql),
-            'session_time' => $timeSlotLabel,
-            'nama_lengkap' => $order->customer_name,
-            'email' => $order->customer_email,
-            'whatsapp' => $order->customer_whatsapp,
-            'lokasi' => $order->location,
-            'catatan' => $order->customer_notes,
-        ]]);
+        // Simpan ringkasan ke session untuk aliran checkout tanpa login
+        session(['last_booking' => \App\Support\BookingSummary::fromOrder($order)]);
 
         return redirect()->route('checkout')
             ->with('success', 'Permintaan pemesanan berhasil dikirim. Kode pesanan Anda: ' . $order->order_code);
@@ -259,116 +254,171 @@ class BookingController extends Controller
     /**
      * Tampilkan form Konfirmasi Pembayaran (hanya untuk pemesan pada sesi yang sama)
      */
-    public function showPaymentConfirmation(Request $request)
+    /**
+     * Cari pesanan untuk halaman pembayaran: lewat kode + kontak (pelanggan yang kembali)
+     * atau lewat sesi pemesanan terakhir.
+     */
+    private function resolveOrder(Request $request): ?Order
     {
-        $data = session('last_booking');
+        $kode = trim((string) $request->input('kode', ''));
+        $kontak = trim((string) $request->input('kontak', ''));
 
-        if (!$data) {
-            return redirect()->route('pemesanan')
-                ->with('error', 'Sesi pemesanan tidak ditemukan. Silakan isi formulir pemesanan terlebih dahulu.');
+        if ($kode !== '') {
+            $order = Order::with('package')->where('order_code', $kode)->first();
+            if ($order && $order->matchesContact($kontak)) {
+                return $order;
+            }
+            // kode tanpa kontak yang cocok: boleh bila sama dengan pesanan di sesi ini
+            $sess = session('last_booking');
+            if ($order && $sess && ($sess['order_code'] ?? null) === $order->order_code && $kontak === '') {
+                return $order;
+            }
+            return null;
         }
 
-        $metode = $request->query('metode', 'transfer');
-        $submittedPayment = session('submitted_payment');
-        $isSubmitted = $request->query('status') === 'success' || $submittedPayment !== null;
+        $sess = session('last_booking');
+        if ($sess && isset($sess['order_code'])) {
+            return Order::with('package')->where('order_code', $sess['order_code'])->first();
+        }
 
-        return view('konfirmasi-pembayaran', compact('data', 'metode', 'isSubmitted', 'submittedPayment'));
+        return null;
     }
 
-    /**
-     * Simpan bukti transfer pembayaran ke storage & database
-     */
-    public function storePaymentConfirmation(Request $request)
+    public function showPaymentConfirmation(Request $request)
     {
-        $validated = $request->validate([
-            'nama_pengirim' => 'required|string|max:255',
-            'tanggal_transfer' => 'required|date',
-            'bank_sumber' => 'required|string|max:100',
-            'nominal' => 'required|string',
-            'catatan_pembayaran' => 'nullable|string',
-            'struk_pembayaran' => 'nullable|file|mimes:jpeg,png,jpg,pdf|max:4096',
-        ]);
-
-        $orderData = session('last_booking');
-        $order = null;
-
-        if ($orderData && isset($orderData['order_code'])) {
-            $order = Order::where('order_code', $orderData['order_code'])->first();
-        }
+        $order = $this->resolveOrder($request);
 
         if (!$order) {
-            return redirect()->route('pemesanan')
-                ->with('error', 'Sesi pemesanan tidak ditemukan. Silakan buat pemesanan terlebih dahulu.');
+            return redirect()->route('cek-pesanan')
+                ->with('error', 'Pesanan tidak ditemukan. Masukkan kode pesanan dan email/WhatsApp yang dipakai saat memesan.');
         }
 
-        // Simpan berkas bukti bila ada
-        $filePath = null;
-        $proofBlob = null; // dipakai bila PAYMENT_PROOF_DISK=database
-        $fileOriginalName = 'bukti-transfer.pdf';
-        $fileExt = 'PDF';
+        $contact = ['kode' => $order->order_code, 'kontak' => $order->customer_email];
+        $submittedPayment = session('submitted_payment');
 
-        if ($request->hasFile('struk_pembayaran')) {
-            $file = $request->file('struk_pembayaran');
-            $fileOriginalName = $file->getClientOriginalName();
-            $fileExt = strtoupper($file->getClientOriginalExtension());
-
-            if (config('filesystems.proof_disk') === 'database') {
-                $filePath = 'db';
-                $proofBlob = [
-                    'mime' => $file->getMimeType() ?: 'application/octet-stream',
-                    'data' => base64_encode(file_get_contents($file->getRealPath())),
-                ];
-            } else {
-                $filePath = $file->store('payments', config('filesystems.proof_disk'));
+        if (!$submittedPayment) {
+            if (in_array($order->session_status, ['Dibatalkan', 'Selesai', 'Diarsipkan'], true)) {
+                return redirect()->route('cek-pesanan', $contact)->with('error', 'Pesanan ini tidak lagi menerima pembayaran.');
+            }
+            if ($order->payment_status === 'Terverifikasi') {
+                return redirect()->route('cek-pesanan', $contact)->with('info', 'Pembayaran Anda sudah terverifikasi. Tidak perlu mengunggah bukti lagi.');
+            }
+            if ($order->payment_status === 'Bukti terkirim') {
+                return redirect()->route('cek-pesanan', $contact)->with('info', 'Bukti pembayaran Anda sudah diterima dan sedang diperiksa studio. Mohon tunggu agar tidak ada unggahan ganda.');
             }
         }
 
-        // Parse nominal number
-        $rawNominal = preg_replace('/[^0-9]/', '', $validated['nominal']);
-        $nominalInt = (int)$rawNominal ?: ($order ? $order->total_price : 9500000);
+        $data = \App\Support\BookingSummary::fromOrder($order);
+        $isSubmitted = $submittedPayment !== null;
+        $needsFix = $order->payment_status === 'Perlu perbaikan';
+        $fixMessage = $needsFix ? optional($order->latestPayment)->customer_message : null;
+
+        return view('konfirmasi-pembayaran', compact('data', 'isSubmitted', 'submittedPayment', 'needsFix', 'fixMessage', 'contact'));
+    }
+
+    public function storePaymentConfirmation(Request $request)
+    {
+        $validated = $request->validate([
+            'nama_pengirim' => 'required|string|min:3|max:100',
+            'tanggal_transfer' => 'required|date|before_or_equal:today|after_or_equal:' . now()->subDays(60)->toDateString(),
+            'bank_sumber' => 'required|string|min:2|max:100',
+            'nominal' => 'required|string|max:20',
+            'catatan_pembayaran' => 'nullable|string|max:1000',
+            'struk_pembayaran' => 'required|file|mimes:jpeg,png,jpg,pdf|max:4096',
+        ], [
+            'nama_pengirim.required' => 'Nama pengirim wajib diisi.',
+            'nama_pengirim.min' => 'Nama pengirim minimal 3 karakter.',
+            'tanggal_transfer.required' => 'Tanggal transfer wajib diisi.',
+            'tanggal_transfer.before_or_equal' => 'Tanggal transfer tidak boleh di masa depan.',
+            'tanggal_transfer.after_or_equal' => 'Tanggal transfer terlalu lama (maksimal 60 hari terakhir).',
+            'bank_sumber.required' => 'Bank atau sumber dana wajib diisi.',
+            'nominal.required' => 'Nominal transfer wajib diisi.',
+            'struk_pembayaran.required' => 'Unggah bukti transfer (JPG, PNG, atau PDF, maksimal 4 MB).',
+            'struk_pembayaran.mimes' => 'Bukti transfer harus berformat JPG, PNG, atau PDF.',
+            'struk_pembayaran.max' => 'Ukuran bukti transfer maksimal 4 MB.',
+            'struk_pembayaran.uploaded' => 'Bukti transfer gagal diunggah. Pastikan ukurannya di bawah 4 MB lalu coba lagi.',
+        ]);
+
+        $nominalInt = (int) preg_replace('/\D+/', '', $validated['nominal']);
+        if ($nominalInt < 1000) {
+            return back()->withInput()->withErrors(['nominal' => 'Nominal transfer tidak valid. Masukkan jumlah yang benar-benar Anda transfer.']);
+        }
+
+        $order = $this->resolveOrder($request);
+        if (!$order) {
+            return redirect()->route('cek-pesanan')
+                ->with('error', 'Pesanan tidak ditemukan. Masukkan kode pesanan dan email/WhatsApp yang dipakai saat memesan.');
+        }
+        $contact = ['kode' => $order->order_code, 'kontak' => $order->customer_email];
+
+        if (in_array($order->session_status, ['Dibatalkan', 'Selesai', 'Diarsipkan'], true)) {
+            return redirect()->route('cek-pesanan', $contact)->with('error', 'Pesanan ini tidak lagi menerima pembayaran.');
+        }
+        if ($order->payment_status === 'Terverifikasi') {
+            return redirect()->route('cek-pesanan', $contact)->with('info', 'Pembayaran sudah terverifikasi. Tidak perlu mengunggah bukti lagi.');
+        }
+        if ($order->payment_status === 'Bukti terkirim') {
+            return redirect()->route('cek-pesanan', $contact)->with('info', 'Bukti pembayaran Anda sedang diperiksa studio. Mohon tunggu agar tidak ada unggahan ganda.');
+        }
+
+        // Simpan berkas bukti
+        $file = $request->file('struk_pembayaran');
+        $fileOriginalName = $file->getClientOriginalName();
+        $fileExt = strtoupper($file->getClientOriginalExtension());
+        $filePath = null;
+        $proofBlob = null;
+
+        if (config('filesystems.proof_disk') === 'database') {
+            $filePath = 'db';
+            $proofBlob = [
+                'mime' => $file->getMimeType() ?: 'application/octet-stream',
+                'data' => base64_encode(file_get_contents($file->getRealPath())),
+            ];
+        } else {
+            $filePath = $file->store('payments', config('filesystems.proof_disk'));
+        }
 
         do {
             $paymentCode = 'BYR-' . date('Y') . '-' . strtoupper(Str::random(5));
         } while (Payment::where('payment_code', $paymentCode)->exists());
 
-        if ($order) {
-            $payment = Payment::create([
-                'payment_code' => $paymentCode,
-                'order_id' => $order->id,
-                'sender_name' => $validated['nama_pengirim'],
-                'transfer_date' => $validated['tanggal_transfer'],
-                'bank_source' => $validated['bank_sumber'],
-                'nominal' => $nominalInt,
-                'sender_notes' => $validated['catatan_pembayaran'] ?? null,
-                'proof_file' => $filePath,
-                'file_original_name' => $fileOriginalName,
-                'file_extension' => $fileExt,
-                'status' => 'Bukti terkirim',
-            ]);
+        $wasFix = $order->payment_status === 'Perlu perbaikan';
 
-            if ($proofBlob) {
-                $payment->proof()->create($proofBlob);
-            }
-
-            // Update status pesanan
-            $order->update([
-                'payment_status' => 'Bukti terkirim',
-            ]);
+        $payment = Payment::create([
+            'payment_code' => $paymentCode,
+            'order_id' => $order->id,
+            'sender_name' => $validated['nama_pengirim'],
+            'transfer_date' => $validated['tanggal_transfer'],
+            'bank_source' => $validated['bank_sumber'],
+            'nominal' => $nominalInt,
+            'sender_notes' => $validated['catatan_pembayaran'] ?? null,
+            'proof_file' => $filePath,
+            'file_original_name' => $fileOriginalName,
+            'file_extension' => $fileExt,
+            'status' => 'Bukti terkirim',
+            'internal_review_notes' => $wasFix ? 'Bukti perbaikan dikirim ulang oleh pelanggan.' : null,
+        ]);
+        if ($proofBlob) {
+            $payment->proof()->create($proofBlob);
         }
 
-        $submittedData = [
-            'nama_pengirim' => $validated['nama_pengirim'],
-            'tanggal_transfer' => $validated['tanggal_transfer'],
-            'bank_sumber' => $validated['bank_sumber'],
-            'nominal' => 'Rp' . number_format($nominalInt, 0, ',', '.'),
-            'catatan_pembayaran' => $validated['catatan_pembayaran'] ?? '',
-            'file_name' => $fileOriginalName,
-            'file_ext' => $fileExt,
-        ];
+        // Bukti lama yang diminta diperbaiki tidak lagi menunggu tindakan pelanggan
+        $order->update(['payment_status' => 'Bukti terkirim']);
 
-        session(['submitted_payment' => $submittedData]);
+        session(['last_booking' => \App\Support\BookingSummary::fromOrder($order)]);
 
-        return redirect()->route('konfirmasi', ['status' => 'success'])
-            ->with('success', 'Bukti Anda sudah diterima oleh studio. Pantau hasil pemeriksaan melalui status pesanan.');
+        return redirect()->route('konfirmasi', $contact)
+            ->with('submitted_payment', [
+                'nama_pengirim' => $validated['nama_pengirim'],
+                'tanggal_transfer' => $validated['tanggal_transfer'],
+                'bank_sumber' => $validated['bank_sumber'],
+                'nominal' => 'Rp' . number_format($nominalInt, 0, ',', '.'),
+                'catatan_pembayaran' => $validated['catatan_pembayaran'] ?? '',
+                'file_name' => $fileOriginalName,
+                'file_ext' => $fileExt,
+            ])
+            ->with('success', $wasFix
+                ? 'Bukti perbaikan Anda sudah diterima. Studio akan memeriksanya kembali.'
+                : 'Bukti Anda sudah diterima oleh studio. Pantau hasil pemeriksaan melalui status pesanan.');
     }
 }

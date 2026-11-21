@@ -212,4 +212,35 @@ class AdminCatalogTest extends TestCase
             $this->asAdmin()->get("/admin/{$page}")->assertOk();
         }
     }
+
+    public function test_data_sesi_paket_buatan_admin_konsisten_dari_pemesanan_hingga_detail_admin(): void
+    {
+        $this->asAdmin()->post('/admin/paket', [
+            'name' => 'Potret Wisuda', 'price' => '700000', 'duration_minutes' => 45,
+            'features' => "Durasi Foto: 45 Menit\n10 Edited Photo", 'tagline' => 'Di luar transport', 'is_active' => 1,
+        ])->assertSessionHas('success');
+
+        // halaman pemesanan memakai durasi, harga, dan fasilitas yang diinput admin
+        $page = $this->get('/pemesanan?package=potret-wisuda');
+        $page->assertOk()->assertSee('data-duration="45"', false)->assertSee('Rp700.000')->assertSee('Durasi Foto: 45 Menit')->assertSee('Di luar transport');
+        $this->assertStringContainsString('"45":{"2026-11-15"', $page->getContent());
+
+        // pesanan menyimpan jadwal sesuai durasi 45 menit, dan semua halaman menampilkan data yang sama
+        $this->post('/pemesanan', [
+            'package_id' => 'potret-wisuda', 'session_date' => '2026-11-24', 'session_time' => '13.00',
+            'nama_lengkap' => 'Wisuda Satu', 'email' => 'wisuda@example.com', 'whatsapp' => '0812 7777 8888',
+            'lokasi' => 'Kampus', 'persetujuan' => 1,
+        ])->assertRedirect(route('checkout'));
+        $order = Order::where('customer_email', 'wisuda@example.com')->first();
+        $this->assertSame('13.00–13.45 WIB · 45 menit', $order->session_time_slot);
+        $this->assertSame(700000, $order->total_price);
+
+        $this->get('/checkout')->assertSee('13.00–13.45 WIB · 45 menit')->assertSee('Rp700.000')->assertSee('Selasa, 24 November 2026');
+        $this->asAdmin()->get("/admin/pesanan/{$order->order_code}")->assertSee('13.00–13.45 WIB · 45 menit')->assertSee('Rp700.000')->assertSee('Selasa, 24 November 2026');
+        $this->asAdmin()->get('/admin/jadwal?bulan=2026-11&tanggal=2026-11-24')->assertSee('Wisuda Satu')->assertSee('13.00–13.45 WIB');
+
+        // jadwal 45 menit ini menutup slot 13.00 tetapi tidak slot 15.30
+        $this->assertFalse(\App\Support\Studio::isAvailable('2026-11-24', '13.00', 45));
+        $this->assertTrue(\App\Support\Studio::isAvailable('2026-11-24', '15.30', 45));
+    }
 }

@@ -76,10 +76,11 @@
                             <td><span class="badge-status-session status-{{ Str::slug($g['status']) }}">{{ $g['status'] }}</span></td>
                             <td><span class="schedule-date-text">{{ $g['access'] }}</span></td>
                             <td style="text-align: right; white-space: nowrap;">
+                                <a href="{{ route('admin.galeri.lihat', ['id' => $g['id']]) }}" class="admin-table-action-link">Lihat →</a>
                                 <button type="button" class="admin-table-action-link js-edit-gallery" style="background:none; border:0; cursor:pointer;"
                                     data-id="{{ $g['id'] }}" data-title="{{ $g['title'] }}" data-status="{{ $g['status'] }}" data-access="{{ $g['access'] }}"
                                     data-target="{{ $g['target'] }}" data-count="{{ $g['photo_count'] }}" data-drive="{{ $g['drive_url'] }}"
-                                    data-notes="{{ $g['notes'] }}" data-pin="{{ $g['pin'] }}" data-order="{{ $g['order_label'] }}">Kelola →</button>
+                                    data-notes="{{ $g['notes'] }}" data-pin="{{ $g['pin'] }}" data-order="{{ $g['order_label'] }}">Kelola</button>
                             </td>
                         </tr>
                     @empty
@@ -97,7 +98,7 @@
     </div>
 
     <p class="admin-table-footer-hint">
-        Foto hasil sesi dikirim lewat tautan Google Drive. Galeri berstatus “Diterbitkan” wajib memiliki tautan Drive.
+        Unggah foto lewat tombol “Lihat” (foto dikecilkan otomatis), dan/atau pasang tautan Google Drive. Galeri “Diterbitkan” wajib punya minimal satu foto atau tautan Drive.
     </p>
 
     {{-- MODAL BUAT GALERI --}}

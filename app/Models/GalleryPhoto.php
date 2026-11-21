@@ -14,6 +14,10 @@ class GalleryPhoto extends Model
         'photo_path',
         'caption',
         'sort_order',
+        'mime',
+        'file_name',
+        'data',
+        'thumb',
     ];
 
     protected $casts = [

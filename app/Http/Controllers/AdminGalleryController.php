@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Gallery;
+use App\Models\GalleryPhoto;
 use App\Models\Order;
 use App\Support\Studio;
 use Illuminate\Http\Request;
@@ -39,7 +40,7 @@ class AdminGalleryController extends Controller
             $counts[Str::lower($st)] = Gallery::where('status', $st)->count();
         }
 
-        $query = Gallery::with('order')->latest('id');
+        $query = Gallery::with('order')->withCount('photos')->latest('id');
         if ($activeTab !== 'semua' && in_array(Str::ucfirst($activeTab), self::STATUSES, true)) {
             $query->where('status', Str::ucfirst($activeTab));
         }
@@ -60,8 +61,9 @@ class AdminGalleryController extends Controller
             'title' => $g->title,
             'order_code' => $g->order ? $g->order->order_code : '—',
             'owner' => $g->client_name,
-            'photos' => $g->photo_count . ' / ' . $g->target_photos,
-            'note' => $g->drive_url ? 'Tautan Drive terpasang' : 'Belum ada tautan Drive',
+            'photos' => ($g->photos_count ?: $g->photo_count) . ' / ' . $g->target_photos,
+            'has_photos' => $g->photos_count > 0,
+            'note' => ($g->photos_count ? $g->photos_count . ' foto di galeri' : 'Belum ada foto') . ($g->drive_url ? ' · Drive terpasang' : ''),
             'status' => $g->status,
             'access' => $g->access_type,
             'pin' => $g->pin_code,
@@ -128,13 +130,13 @@ class AdminGalleryController extends Controller
             'access_type' => ['required', Rule::in(self::ACCESS)],
             'target_photos' => 'required|integer|min:1|max:1000',
             'photo_count' => 'required|integer|min:0|max:100000',
-            'drive_url' => ['nullable', 'url', 'max:500', Rule::requiredIf(fn () => $request->input('status') === 'Diterbitkan')],
+            'drive_url' => ['nullable', 'url', 'max:500', Rule::requiredIf(fn () => $request->input('status') === 'Diterbitkan' && !$gallery->photos()->exists())],
             'notes' => 'nullable|string|max:1000',
             'reset_pin' => 'nullable|boolean',
         ], [
             'title.required' => 'Judul galeri wajib diisi.',
             'drive_url.url' => 'Tautan Google Drive tidak valid. Awali dengan https://',
-            'drive_url.required' => 'Tautan Google Drive wajib diisi untuk menerbitkan galeri.',
+            'drive_url.required' => 'Untuk menerbitkan galeri, unggah minimal satu foto atau isi tautan Google Drive.',
             'target_photos.min' => 'Target jumlah foto minimal 1.',
         ]);
 
@@ -151,7 +153,7 @@ class AdminGalleryController extends Controller
             'status' => $data['status'],
             'access_type' => $data['access_type'],
             'target_photos' => $data['target_photos'],
-            'photo_count' => $data['photo_count'],
+            'photo_count' => $gallery->photos()->exists() ? $gallery->photos()->count() : $data['photo_count'],
             'drive_url' => $data['drive_url'] ?? null,
             'notes' => $data['notes'] ?? null,
             'pin_code' => $pin,
@@ -168,5 +170,98 @@ class AdminGalleryController extends Controller
         $gallery->delete();
 
         return redirect()->route('admin.galeri')->with('success', 'Galeri “' . $title . '” berhasil dihapus.');
+    }
+
+    // ---------------------------------------------------------------- Foto galeri
+
+    private function syncCount(Gallery $gallery): void
+    {
+        $gallery->update(['photo_count' => $gallery->photos()->count()]);
+    }
+
+    /** Halaman "Lihat galeri": foto nyata, unggah, hapus, jadikan sampul. */
+    public function show($id)
+    {
+        $gallery = Gallery::with('order')->findOrFail($id);
+        $photos = $gallery->photos()->orderBy('sort_order')->orderBy('id')->get(['id', 'file_name', 'sort_order']);
+
+        return view('admin.galeri-detail', [
+            'gallery' => $gallery,
+            'photos' => $photos,
+            'shareUrl' => route('galeri-klien', ['slug' => $gallery->slug]),
+            'maxPhotos' => 80,
+        ]);
+    }
+
+    /** Unggah satu foto per permintaan (browser mengecilkan gambar lebih dulu; batas body Vercel ±4,5 MB). */
+    public function uploadPhoto(Request $request, $id)
+    {
+        $gallery = Gallery::findOrFail($id);
+
+        if ($gallery->photos()->count() >= 80) {
+            return response()->json(['ok' => false, 'message' => 'Batas 80 foto per galeri tercapai.'], 422);
+        }
+
+        $validated = $request->validate([
+            'foto' => 'required|file|mimes:jpg,jpeg,png,webp|max:3072',
+            'thumb' => 'nullable|file|mimes:jpg,jpeg,png,webp|max:600',
+        ], [
+            'foto.required' => 'Pilih foto yang akan diunggah.',
+            'foto.mimes' => 'Foto harus berformat JPG, PNG, atau WEBP.',
+            'foto.max' => 'Ukuran foto maksimal 3 MB.',
+            'foto.uploaded' => 'Foto gagal diunggah. Pastikan ukurannya di bawah 3 MB.',
+        ]);
+
+        $file = $request->file('foto');
+        $thumb = $request->file('thumb');
+        $next = (int) $gallery->photos()->max('sort_order') + 1;
+
+        $photo = GalleryPhoto::create([
+            'gallery_id' => $gallery->id,
+            'photo_path' => 'db',
+            'caption' => null,
+            'sort_order' => $next,
+            'mime' => $file->getMimeType() ?: 'image/jpeg',
+            'file_name' => mb_substr($file->getClientOriginalName(), 0, 200),
+            'data' => base64_encode(file_get_contents($file->getRealPath())),
+            'thumb' => $thumb ? base64_encode(file_get_contents($thumb->getRealPath())) : null,
+        ]);
+        $this->syncCount($gallery);
+
+        return response()->json(['ok' => true, 'id' => $photo->id, 'count' => $gallery->photos()->count()]);
+    }
+
+    public function deletePhoto($id, $photo)
+    {
+        $gallery = Gallery::findOrFail($id);
+        $row = GalleryPhoto::where('gallery_id', $gallery->id)->findOrFail($photo);
+        $row->delete();
+        $this->syncCount($gallery);
+
+        return redirect()->route('admin.galeri.lihat', ['id' => $gallery->id])->with('success', 'Foto berhasil dihapus dari galeri.');
+    }
+
+    public function coverPhoto($id, $photo)
+    {
+        $gallery = Gallery::findOrFail($id);
+        $row = GalleryPhoto::where('gallery_id', $gallery->id)->findOrFail($photo);
+        $min = (int) $gallery->photos()->min('sort_order');
+        $row->update(['sort_order' => $min - 1]);
+
+        return redirect()->route('admin.galeri.lihat', ['id' => $gallery->id])->with('success', 'Foto dijadikan sampul galeri.');
+    }
+
+    /** Pratinjau foto untuk admin (butuh login admin). */
+    public function photoImage($id, $photo, $variant = 'thumb')
+    {
+        $row = GalleryPhoto::where('gallery_id', $id)->findOrFail($photo);
+        $data = $variant === 'full' ? $row->data : ($row->thumb ?: $row->data);
+        abort_unless($data, 404);
+
+        return response(base64_decode($data), 200, [
+            'Content-Type' => $row->mime ?: 'image/jpeg',
+            'Cache-Control' => 'private, max-age=600',
+            'X-Content-Type-Options' => 'nosniff',
+        ]);
     }
 }

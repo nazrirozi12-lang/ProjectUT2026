@@ -1,165 +1,123 @@
 @extends('layouts.app')
 
-@section('title', 'Galeri Foto — Naro Capture')
+@section('title', $gallery->title . ' — Galeri Naro Capture')
 
 @section('content')
 <main class="gallery-page">
-    {{-- PENGANTAR HALAMAN GALERI (FIGMA 105:45334) --}}
     <section class="checkout-hero">
         <div class="booking-breadcrumb">
             <a href="{{ url('/') }}">Beranda</a>
             <span class="sep">/</span>
             <a href="{{ route('cek-pesanan') }}">Pesanan</a>
             <span class="sep">/</span>
-            <span>{{ $data['order_code'] ?? 'CH-CONTOH-001' }}</span>
+            <span>{{ $gallery->title }}</span>
         </div>
 
         <div class="checkout-header">
             <div class="checkout-header__left">
-                <span class="eyebrow">TINJAUAN &amp; HASIL SESI</span>
-                <h1 class="checkout-header__title">Cerita keluarga, untuk dikenang.</h1>
+                <span class="eyebrow">HASIL SESI</span>
+                <h1 class="checkout-header__title">{{ $gallery->title }}</h1>
             </div>
             <p class="body-text checkout-header__desc">
-                Galeri pribadi {{ $data['nama_lengkap'] ?? 'Ayu Pramesti' }}. Nikmati kembali momen kebersamaan, unduh foto pilihan Anda, dan simpan cerita ini dengan baik.
+                Galeri {{ $gallery->access_type === 'Privat' ? 'pribadi ' : '' }}{{ $gallery->client_name }}. Lihat kembali foto sesi Anda dan unduh foto pilihan Anda.
             </p>
         </div>
 
         <div class="tracking-results-header">
-            <span class="font-20 font-normal" style="color:var(--blue);">{{ $data['order_code'] ?? 'CH-CONTOH-001' }}</span>
+            <span class="font-20 font-normal" style="color:var(--blue);">{{ $order ? $order->order_code : $gallery->title }}</span>
             <span class="badge-tag" style="background:#E8F0FF; color:#3B5B9A; padding:6px 12px; font-size:11px;">
-                Tahap lanjutan · Contoh galeri siap
+                {{ $gallery->access_type === 'Privat' ? 'Galeri pribadi' : 'Galeri terbuka' }}
             </span>
         </div>
         <hr class="divider">
     </section>
 
-    {{-- ISI GALERI (FIGMA 105:45347) --}}
     <section class="gallery-content-section">
-        {{-- Banner Panduan Status --}}
-        <div class="notice-readonly-proof">
-            <img src="{{ asset('images/icon-info.svg') }}" alt="" class="notice-icon" width="20" height="20">
-            <div>
-                <h4 class="notice-readonly-title" style="font-weight:600;">Galeri pribadi · contoh tampilan</h4>
-                <p class="notice-readonly-desc">
-                    Foto pada halaman ini adalah ilustrasi dari foto paket keluarga, digunakan ulang untuk memperlihatkan tampilan galeri. Tidak ada galeri pelanggan asli, tautan berbagi, atau pengiriman foto nyata.
-                </p>
-            </div>
-        </div>
-
-        {{-- Sampul dan Rincian Galeri --}}
-        <div class="gallery-header-cover-grid">
-            <div class="gallery-cover-img-wrap">
-                <img src="{{ asset('images/work-1.jpg') }}" alt="Foto Sampul Keluarga" class="gallery-cover-img">
-            </div>
-
-            <div class="gallery-meta-card">
-                <span class="badge-tag" style="background:#E8F0FF; color:#3B5B9A; padding:6px 14px; font-size:11px; width:fit-content;">
-                    50 foto diedit · Telah diserahkan
-                </span>
-                <h2 class="card-title font-25">{{ $data['package_name'] ?? 'Prewedding' }}</h2>
-
-                <div style="display:flex; flex-direction:column; gap:14px;">
+        @if ($photos->isNotEmpty())
+            <div class="gallery-header-cover-grid">
+                <div class="gallery-cover-img-wrap">
+                    <img src="{{ route('galeri-klien.foto', ['slug' => $gallery->slug, 'photo' => $photos->first()->id, 'variant' => 'full']) }}" alt="Sampul {{ $gallery->title }}" class="gallery-cover-img">
+                </div>
+                <div class="gallery-meta-card">
                     <div>
-                        <span class="detail-label">Pemesan</span>
-                        <strong class="detail-value">{{ $data['nama_lengkap'] ?? 'Ayu Pramesti' }}</strong>
+                        <span class="eyebrow">DETAIL GALERI</span>
+                        <h2 class="card-title font-25">{{ $order ? $order->package_name : $gallery->title }}</h2>
                     </div>
-
-                    <div>
-                        <span class="detail-label">Sesi selesai</span>
-                        <strong class="detail-value">{{ $data['session_date'] ?? 'Sabtu, 17 Oktober 2026' }}</strong>
-                        <span class="body-text font-12" style="display:block; margin-top:2px;">{{ $data['session_time'] ?? '15.30–17.00 WIB · 90 menit' }}</span>
+                    <div class="gallery-meta-rows">
+                        <div class="detail-row"><div>
+                            <span class="detail-label">Pemilik galeri</span>
+                            <strong class="detail-value">{{ $gallery->client_name }}</strong>
+                        </div></div>
+                        @if ($sessionDate)
+                            <div class="detail-row"><div>
+                                <span class="detail-label">Tanggal sesi</span>
+                                <strong class="detail-value">{{ $sessionDate }}</strong>
+                            </div></div>
+                        @endif
+                        <div class="detail-row"><div>
+                            <span class="detail-label">Jumlah foto</span>
+                            <strong class="detail-value">{{ $photos->count() }} foto</strong>
+                        </div></div>
                     </div>
-
-                    <div>
-                        <span class="detail-label">Lokasi sesi</span>
-                        <strong class="detail-value">{{ $data['lokasi'] ?? 'Rumah keluarga di Jakarta Selatan & taman terdekat' }}</strong>
-                    </div>
-
-                    <hr class="divider">
-
-                    <div>
-                        <span class="detail-label">Pesanan / invoice contoh</span>
-                        <strong class="detail-value">{{ $data['order_code'] ?? 'CH-CONTOH-001' }}</strong>
-                        <span class="body-text font-12" style="display:block;">{{ $data['invoice_number'] ?? 'INV-CH-2026-001' }}</span>
-                    </div>
-
-                    <span class="body-text font-11 muted">
-                        Pembayaran terverifikasi · Galeri siap dilihat<br>
-                        {{ $maskedEmail ?? 'a•••@gmail.com' }} · {{ $maskedPhone ?? '+62 8•• •••• 7890' }}
-                    </span>
                 </div>
             </div>
-        </div>
+        @endif
 
-        {{-- Pengantar Koleksi Foto --}}
         <div class="tracking-results-header" style="align-items:flex-end;">
             <div>
                 <h3 class="card-title font-25">Galeri foto Anda</h3>
                 <p class="body-text font-13" style="margin-top:4px;">
-                    50 foto diedit telah diserahkan dalam contoh keadaan ini. Menampilkan 6 dari 50 foto · Halaman 1 dari 9.
+                    {{ $photos->count() ? $photos->count() . ' foto tersedia. Klik foto untuk memperbesar.' : 'Foto belum diunggah ke galeri ini.' }}
                 </p>
             </div>
-            <div style="display:flex; gap:12px;">
-                <button type="button" class="btn btn--outline btn-sm">Lihat Tayangan Foto</button>
-                <button type="button" class="btn btn--fill btn-sm" style="background:#3B5B9A; color:#FFF;">Unduh Semua Foto</button>
-            </div>
-        </div>
-
-        {{-- Grid Koleksi Foto (6 Foto) --}}
-        <div class="gallery-grid-3">
-            @php
-                $photos = [
-                    ['img' => 'work-1.jpg', 'title' => 'Keluarga — 01'],
-                    ['img' => 'work-2.jpg', 'title' => 'Keluarga — 02'],
-                    ['img' => 'work-3.jpg', 'title' => 'Keluarga — 03'],
-                    ['img' => 'work-4.jpg', 'title' => 'Keluarga — 04'],
-                    ['img' => 'work-5.jpg', 'title' => 'Keluarga — 05'],
-                    ['img' => 'work-6.jpg', 'title' => 'Keluarga — 06'],
-                ];
-            @endphp
-
-            @foreach($photos as $photo)
-                <div class="gallery-photo-card">
-                    <div class="gallery-photo-img-wrap">
-                        <img src="{{ asset('images/' . $photo['img']) }}" alt="{{ $photo['title'] }}" class="gallery-photo-img">
-                    </div>
-                    <div class="gallery-photo-info">
-                        <strong class="gallery-photo-title">{{ $photo['title'] }}</strong>
-                        <span class="gallery-photo-actions">Lihat &nbsp;·&nbsp; Unduh ↓</span>
-                    </div>
+            @if ($gallery->drive_url)
+                <div style="display:flex; gap:12px;">
+                    <a href="{{ $gallery->drive_url }}" target="_blank" rel="noopener noreferrer" class="btn btn--fill btn-sm" style="background:#3B5B9A; color:#FFF;">Buka semua foto di Google Drive ↗</a>
                 </div>
-            @endforeach
+            @endif
         </div>
 
-        {{-- Navigasi Galeri / Pagination --}}
-        <div class="gallery-pagination">
-            <span class="body-text font-11 muted">Menampilkan 6 dari 50 foto · Foto ilustrasi untuk contoh antarmuka</span>
-            <div style="display:flex; align-items:center; gap:16px;">
-                <button type="button" class="btn btn--outline btn-sm" disabled style="opacity:0.45; cursor:not-allowed;">Sebelumnya</button>
-                <div class="gallery-pagination-numbers">
-                    <strong style="color:var(--ink);">1</strong>
-                    <span>2</span>
-                    <span>3</span>
-                    <span>…</span>
-                    <span>9</span>
+        @if ($photos->isEmpty())
+            <div class="notice-readonly-proof">
+                <img src="{{ asset('images/icon-info.svg') }}" alt="" class="notice-icon" width="20" height="20">
+                <div>
+                    <h4 class="notice-readonly-title">Foto sedang disiapkan</h4>
+                    <p class="notice-readonly-desc">
+                        {{ $gallery->drive_url ? 'Foto Anda tersedia lewat tautan Google Drive di atas.' : 'Studio belum mengunggah foto ke galeri ini. Anda akan dikabari setelah siap.' }}
+                    </p>
                 </div>
-                <button type="button" class="btn btn--outline btn-sm">Berikutnya</button>
             </div>
-        </div>
+        @else
+            <div class="gallery-grid-3">
+                @foreach ($photos as $i => $photo)
+                    <div class="gallery-photo-card">
+                        <a href="{{ route('galeri-klien.foto', ['slug' => $gallery->slug, 'photo' => $photo->id, 'variant' => 'full']) }}" target="_blank" rel="noopener" class="gallery-photo-img-wrap" style="display:block;">
+                            <img src="{{ route('galeri-klien.foto', ['slug' => $gallery->slug, 'photo' => $photo->id]) }}" alt="{{ $gallery->title }} — foto {{ $i + 1 }}" class="gallery-photo-img" loading="lazy">
+                        </a>
+                        <div class="gallery-photo-info">
+                            <strong class="gallery-photo-title">Foto {{ str_pad((string) ($i + 1), 2, '0', STR_PAD_LEFT) }}</strong>
+                            <span class="gallery-photo-actions">
+                                <a href="{{ route('galeri-klien.foto', ['slug' => $gallery->slug, 'photo' => $photo->id, 'variant' => 'full']) }}" target="_blank" rel="noopener" class="link-blue">Lihat</a>
+                                &nbsp;·&nbsp;
+                                <a href="{{ route('galeri-klien.foto', ['slug' => $gallery->slug, 'photo' => $photo->id, 'variant' => 'full', 'unduh' => 1]) }}" class="link-blue">Unduh ↓</a>
+                            </span>
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+        @endif
 
-        {{-- Panduan Menyimpan Foto --}}
         <div class="gallery-guide-card">
             <div class="gallery-guide-col">
                 <h4 class="font-20 font-normal">Simpan untuk hari-hari mendatang.</h4>
-                <p class="body-text font-13">Gunakan “Unduh Semua Foto” untuk koleksi lengkap atau unduh foto satu per satu. Paket mencakup galeri pribadi dan izin cetak pribadi.</p>
+                <p class="body-text font-13">Unduh foto satu per satu, atau gunakan tautan Google Drive (bila tersedia) untuk koleksi lengkap resolusi penuh.</p>
             </div>
             <div class="gallery-guide-col">
-                <h4 class="font-20 font-normal">Ruang pribadi untuk keluarga Anda.</h4>
-                <p class="body-text font-13">Jaga akses galeri dan berkas unduhan hanya untuk orang yang Anda percayai. Hubungi studio bila Anda membutuhkan bantuan melihat, mengunduh, atau mencetak foto.</p>
+                <h4 class="font-20 font-normal">Jaga akses galeri Anda.</h4>
+                <p class="body-text font-13">Bagikan tautan{{ $gallery->access_type === 'Privat' ? ' dan PIN' : '' }} hanya kepada orang yang Anda percayai. Hubungi studio bila Anda membutuhkan bantuan.</p>
             </div>
         </div>
 
-        {{-- Banner Bantuan Pesanan --}}
         <div class="tracking-contact-banner">
             <div style="display: flex; align-items: center; gap: 20px;">
                 <img src="{{ asset('images/icon-email.svg') }}" alt="" width="24" height="24" style="flex-shrink:0;">
@@ -168,11 +126,8 @@
                     <p class="body-text font-13">Hubungi narocapture@gmail.com dan sertakan kode pesanan Anda. Jangan kirim PIN, kata sandi, atau kode OTP.</p>
                 </div>
             </div>
-            <a href="mailto:narocapture@gmail.com" class="btn btn--outline" style="white-space: nowrap;">
-                Hubungi Studio
-            </a>
+            <a href="mailto:narocapture@gmail.com" class="btn btn--outline" style="white-space: nowrap;">Hubungi Studio</a>
         </div>
     </section>
 </main>
 @endsection
-

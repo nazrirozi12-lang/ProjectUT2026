@@ -30,7 +30,11 @@
                 <div class="masonry__col">
                     @foreach ($column as $work)
                         <figure class="work">
-                            <div class="work__img"><img src="{{ asset('images/' . $work['image']) }}" alt="{{ $work['title'] }}" style="height:{{ $work['height'] }}px"></div>
+                            @if (!empty($work['url']))
+                                <a href="{{ $work['url'] }}" class="work__img" style="display:block;" aria-label="Buka galeri {{ $work['title'] }}"><img src="{{ \App\Support\Media::pkg($work['image']) }}" alt="{{ $work['title'] }}" style="height:{{ $work['height'] }}px"></a>
+                            @else
+                                <div class="work__img"><img src="{{ asset('images/' . $work['image']) }}" alt="{{ $work['title'] }}" style="height:{{ $work['height'] }}px"></div>
+                            @endif
                             <figcaption>
                                 <span class="work__title">{{ $work['title'] }}</span>
                                 <span class="work__cat">{{ $work['category'] }}</span>

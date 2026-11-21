@@ -212,17 +212,20 @@
 
                         <div class="form-group">
                             <label for="nama_lengkap" class="form-label">Nama lengkap *</label>
-                            <input type="text" id="nama_lengkap" name="nama_lengkap" class="form-control" placeholder="Contoh: Ayu Pramesti" value="{{ old('nama_lengkap') }}" required>
+                            <input type="text" id="nama_lengkap" name="nama_lengkap" class="form-control" placeholder="Contoh: Ayu Pramesti" value="{{ old('nama_lengkap') }}" required minlength="3" maxlength="100" autocomplete="name">
+                            @error('nama_lengkap')<p class="form-error">{{ $message }}</p>@enderror
                         </div>
 
                         <div class="form-row-2">
                             <div class="form-group">
                                 <label for="email" class="form-label">Alamat email *</label>
-                                <input type="email" id="email" name="email" class="form-control" placeholder="nama@email.com" value="{{ old('email') }}" required>
+                                <input type="email" id="email" name="email" class="form-control" placeholder="nama@email.com" value="{{ old('email') }}" required maxlength="255" autocomplete="email">
+                                @error('email')<p class="form-error">{{ $message }}</p>@enderror
                             </div>
                             <div class="form-group">
                                 <label for="whatsapp" class="form-label">Nomor WhatsApp *</label>
-                                <input type="tel" id="whatsapp" name="whatsapp" class="form-control" placeholder="+62 812 3456 7890" value="{{ old('whatsapp') }}" inputmode="numeric" autocomplete="tel" required>
+                                <input type="tel" id="whatsapp" name="whatsapp" class="form-control" placeholder="+62 812 3456 7890" value="{{ old('whatsapp') }}" inputmode="tel" autocomplete="tel" required maxlength="25" pattern="\+?[0-9][0-9\s\-]{6,22}[0-9]" title="Contoh: 0812 3456 7890 atau +62 812 3456 7890">
+                                @error('whatsapp')<p class="form-error">{{ $message }}</p>@enderror
                             </div>
                         </div>
 
@@ -245,7 +248,8 @@
 
                         <div class="form-group">
                             <label for="lokasi" class="form-label">Lokasi sesi *</label>
-                            <input type="text" id="lokasi" name="lokasi" class="form-control" placeholder="Contoh: Rumah / Cafe / Studio di Jakarta Selatan" value="{{ old('lokasi') }}" required>
+                            <input type="text" id="lokasi" name="lokasi" class="form-control" placeholder="Contoh: Rumah / Cafe / Studio di Jakarta Selatan" value="{{ old('lokasi') }}" required minlength="3" maxlength="255">
+                            @error('lokasi')<p class="form-error">{{ $message }}</p>@enderror
                             <p class="form-helper-text" id="lokasiHelper">{{ $selPkg['location_note'] ?? '' }}</p>
                         </div>
 
@@ -260,9 +264,10 @@
                     {{-- Persetujuan & Tombol Kirim --}}
                     <div class="form-section">
                         <label class="consent-checkbox-label">
-                            <input type="checkbox" name="persetujuan" value="1" required class="custom-checkbox">
+                            <input type="checkbox" name="persetujuan" value="1" required class="custom-checkbox" {{ old('persetujuan') ? 'checked' : '' }}>
                             <span class="consent-text">Saya menyetujui Kebijakan Privasi dan Syarat Pemesanan, serta bersedia dihubungi untuk membahas rencana sesi ini.</span>
                         </label>
+                        @error('persetujuan')<p class="form-error">{{ $message }}</p>@enderror
 
                         <button type="submit" class="btn btn--fill btn--block btn--lg">
                             Kirim Permintaan Pemesanan @include('partials.arrow')

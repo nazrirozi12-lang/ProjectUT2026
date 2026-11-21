@@ -3469,7 +3469,9 @@ body:has(.gallery-page) .btn--outline-light:hover {
 .admin-doc-preview-box {
     background: #F5F8FF;
     border-radius: 8px;
-    height: 322px;
+    height: auto;
+    min-height: 260px;
+    overflow: hidden;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -4058,3 +4060,16 @@ body:has(.gallery-page) .brand__logo--dark { display: block; }
 .calendar-day-cell.is-today .day-num { background: var(--blue); color: #fff; border-radius: 50%; width: 24px; height: 24px; display: inline-grid; place-items: center; }
 .cal-event-more { font-size: 11px; color: var(--muted); margin-top: 2px; }
 a.calendar-day-cell:hover { background: #F4F5F0; }
+
+/* Pratinjau bukti: gambar selalu muat di dalam kotak */
+.admin-doc-preview-box img { max-width: 100%; height: auto; max-height: 520px; object-fit: contain; display: block; }
+
+/* ===== Validasi form pelanggan ===== */
+.form-error { color: #D32F2F; font-size: 13px; margin-top: 6px; line-height: 1.4; }
+.form-control:user-invalid, .form-control.is-invalid { border-color: #D32F2F; }
+
+/* ===== Galeri admin: grid foto ===== */
+.admin-gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 14px; margin-top: 16px; }
+.admin-gallery-item { border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: #fff; }
+.admin-gallery-item img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; display: block; background: #F5F8FF; }
+.admin-gallery-item__meta { display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; font-size: 12px; color: var(--muted); }

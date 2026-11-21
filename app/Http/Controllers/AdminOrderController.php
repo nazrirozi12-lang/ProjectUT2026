@@ -75,6 +75,7 @@ class AdminOrderController extends Controller
                 'time' => explode(' ', (string) $order->session_time_slot)[0] ?? '-',
                 'session_status' => $order->session_status,
                 'payment_status' => $order->payment_status,
+                'deletable' => $order->isDeletable(),
             ];
         })->all();
 
@@ -149,6 +150,8 @@ class AdminOrderController extends Controller
             'can_cancel' => in_array($status, ['Permintaan', 'Dikonfirmasi'], true),
             'can_edit' => in_array($status, ['Permintaan', 'Dikonfirmasi'], true),
             'can_archive' => in_array($status, ['Selesai', 'Dibatalkan'], true),
+            'can_delete' => $orderModel->isDeletable(),
+            'delete_hint' => $orderModel->isDeletable() ? null : 'Pesanan dengan sesi Dikonfirmasi atau Selesai tidak dapat dihapus. Batalkan terlebih dahulu bila perlu.',
             'is_cancelled' => $status === 'Dibatalkan',
             'cancel_reason' => $orderModel->cancel_reason,
             'timeline' => $this->timeline($orderModel, $latestPayment),
@@ -273,6 +276,28 @@ class AdminOrderController extends Controller
 
         return redirect()->route('admin.pesanan', ['tab' => 'arsip'])
             ->with('success', 'Pesanan ' . $order->order_code . ' berhasil dipindahkan ke arsip.');
+    }
+
+    /** Hapus pesanan permanen. Hanya untuk sesi selain Dikonfirmasi dan Selesai. */
+    public function destroy($id)
+    {
+        $order = Order::findByCodeOrFail($id);
+        $code = $order->order_code;
+
+        if (!$order->isDeletable()) {
+            return back()->with('error', 'Pesanan ' . $code . ' tidak dapat dihapus karena sesinya berstatus Dikonfirmasi atau Selesai.');
+        }
+        if ($order->gallery()->exists()) {
+            return back()->with('error', 'Pesanan ' . $code . ' sudah memiliki galeri. Hapus galerinya terlebih dahulu di menu Galeri.');
+        }
+
+        \Illuminate\Support\Facades\DB::transaction(function () use ($order) {
+            // Pembayaran (beserta bukti) ikut terhapus; jadwal terkait dilepas
+            $order->studioSlots()->delete();
+            $order->delete();
+        });
+
+        return redirect()->route('admin.pesanan')->with('success', 'Pesanan ' . $code . ' beserta data pembayarannya berhasil dihapus.');
     }
 
     /** Edit jadwal, lokasi, dan catatan internal. */

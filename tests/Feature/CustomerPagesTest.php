@@ -48,7 +48,7 @@ class CustomerPagesTest extends TestCase
     {
         $this->post('/pemesanan', [
             'package_id' => 'graduation', 'session_date' => '2026-11-18', 'session_time' => '13.00',
-            'nama_lengkap' => 'Cek Pesanan', 'email' => 'cek@example.com', 'whatsapp' => '081211112222',
+            'nama_lengkap' => 'Cek Pesanan', 'email' => 'cek@example.com', 'whatsapp' => '081211112222', 'lokasi' => 'Studio', 'persetujuan' => 1,
         ])->assertRedirect(route('checkout'));
         $o = Order::where('customer_email', 'cek@example.com')->first();
 

@@ -36,9 +36,9 @@
 
                 {{-- PRATINJAU DOKUMEN BUKTI (nyata) --}}
                 @if ($payment['proof']['available'] && $payment['proof']['kind'] === 'image')
-                    <div class="admin-doc-preview-box" style="padding:12px; align-items:center;">
+                    <div class="admin-doc-preview-box">
                         <a href="{{ $payment['proof']['url'] }}" target="_blank" rel="noopener">
-                            <img src="{{ $payment['proof']['url'] }}" alt="Bukti transfer {{ $payment['sender'] }}" style="max-width:100%; max-height:560px; border-radius:6px; display:block; margin:0 auto;">
+                            <img src="{{ $payment['proof']['url'] }}" alt="Bukti transfer {{ $payment['sender'] }}" style="border-radius:6px;">
                         </a>
                     </div>
                 @elseif ($payment['proof']['available'] && $payment['proof']['kind'] === 'pdf')

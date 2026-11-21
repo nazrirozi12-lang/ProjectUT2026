@@ -33,12 +33,12 @@
                 <div class="tracking-search-row">
                     <div class="tracking-search-col">
                         <label for="searchKode" class="form-label">Kode Pesanan *</label>
-                        <input type="text" id="searchKode" name="kode" class="form-control" placeholder="Masukkan kode dari email atau WhatsApp" value="{{ $searchCode ?: $data['order_code'] }}" required>
+                        <input type="text" id="searchKode" name="kode" class="form-control" placeholder="Masukkan kode dari email atau WhatsApp" value="{{ $searchCode ?: ($data['order_code'] ?? '') }}" required>
                     </div>
 
                     <div class="tracking-search-col">
                         <label for="searchKontak" class="form-label">Email atau nomor WhatsApp saat pemesanan *</label>
-                        <input type="text" id="searchKontak" name="kontak" class="form-control" placeholder="Gunakan salah satu kontak asli Anda" value="{{ $searchContact ?: $data['email'] }}" required>
+                        <input type="text" id="searchKontak" name="kontak" class="form-control" placeholder="Gunakan salah satu kontak asli Anda" value="{{ $searchContact ?: ($data['email'] ?? '') }}" required>
                     </div>
 
                     <button type="submit" class="btn btn--fill btn-search-tracking" style="height: 48px; padding: 0 24px;">
@@ -70,221 +70,88 @@
                 <div class="tracking-title-wrap">
                     <h2 class="card-title font-25">Pesanan ditemukan</h2>
                     <span class="badge-tag" style="background:#E8F0FF; color:#3B5B9A; padding:6px 12px; font-size:11px;">
-                        Contoh tampilan hasil
+                        {{ $statusKey }}
                     </span>
                 </div>
-                <span class="body-text font-13 muted">Kode ilustrasi: {{ $data['order_code'] }}</span>
+                <span class="body-text font-13 muted">Kode pesanan: {{ $data['order_code'] }}</span>
             </div>
 
             <div class="checkout-split-grid">
                 {{-- KOLOM KIRI: STATUS PESANAN & LINIMASA (FIGMA 95:1541) --}}
                 <div class="checkout-box status-tracking-main-box">
                     <div class="status-current-box">
-                        @if($statusKey === 'dikonfirmasi')
-                            <div class="status-eyebrow-row">
-                                <img src="{{ asset('images/check.svg') }}" alt="" width="18" height="18">
-                                <span class="eyebrow">PESANAN DIKONFIRMASI</span>
-                            </div>
-                            <h2 class="status-main-heading">Sesi Anda sudah dikonfirmasi</h2>
-                            <p class="body-text">
-                                Pembayaran telah terverifikasi dan jadwal sesi disetujui oleh studio. Kami menantikan cerita keluarga Anda.
-                            </p>
-                        @elseif($statusKey === 'menunggu-pembayaran')
-                            <div class="status-eyebrow-row">
-                                <img src="{{ asset('images/icon-clock.svg') }}" alt="" width="18" height="18">
-                                <span class="eyebrow">MENUNGGU PEMBAYARAN</span>
-                            </div>
-                            <h2 class="status-main-heading">Menunggu transfer pembayaran</h2>
-                            <p class="body-text">
-                                Silakan lakukan pembayaran sesuai instruksi invoice dan unggah bukti transfer agar pesanan Anda dapat diproses.
-                            </p>
-                        @else
-                            <div class="status-eyebrow-row">
-                                <img src="{{ asset('images/icon-clock.svg') }}" alt="" width="18" height="18">
-                                <span class="eyebrow">MENUNGGU TINJAUAN STUDIO</span>
-                            </div>
-                            <h2 class="status-main-heading">Bukti pembayaran sedang diperiksa</h2>
-                            <p class="body-text">
-                                Bukti Anda sudah diterima. Pembayaran belum terverifikasi dan pemesanan belum dikonfirmasi. Tim studio akan mengabari Anda melalui email atau WhatsApp setelah peninjauan.
-                            </p>
-                        @endif
+                        <div class="status-eyebrow-row">
+                            <img src="{{ asset('images/' . ($track['icon'] === 'check' ? 'check.svg' : 'icon-clock.svg')) }}" alt="" width="18" height="18">
+                            <span class="eyebrow" @if($track['tone'] === 'warn') style="color:#B7791F;" @endif>{{ $track['eyebrow'] }}</span>
+                        </div>
+                        <h2 class="status-main-heading">{{ $track['heading'] }}</h2>
+                        <p class="body-text">{{ $track['text'] }}</p>
                     </div>
 
-                    {{-- Panduan Status Banner --}}
-                    @if($statusKey === 'dikonfirmasi')
-                        <div class="notice-readonly-proof">
-                            <img src="{{ asset('images/icon-info.svg') }}" alt="" class="notice-icon" width="18" height="18">
-                            <div>
-                                <h4 class="notice-readonly-title">Sampai jumpa pada {{ $data['session_date'] }}</h4>
-                                <p class="notice-readonly-desc">Sesi berlangsung pukul {{ $data['session_time'] }}. Sesi foto belum berlangsung; tahap selesai masih akan datang.</p>
-                            </div>
+                    <div class="notice-readonly-proof" @if($track['tone'] === 'warn') style="border-left:4px solid #B7791F;" @endif>
+                        <img src="{{ asset('images/icon-info.svg') }}" alt="" class="notice-icon" width="18" height="18">
+                        <div>
+                            <h4 class="notice-readonly-title">{{ $track['notice'][0] }}</h4>
+                            <p class="notice-readonly-desc">{{ $track['notice'][1] }}</p>
                         </div>
-                    @else
-                        <div class="notice-readonly-proof">
-                            <img src="{{ asset('images/icon-info.svg') }}" alt="" class="notice-icon" width="18" height="18">
-                            <div>
-                                <h4 class="notice-readonly-title">Tidak perlu mengunggah bukti lagi.</h4>
-                                <p class="notice-readonly-desc">Mohon tunggu hasil pemeriksaan agar tidak ada unggahan ganda. Kirim perbaikan hanya jika studio memintanya.</p>
-                            </div>
+                    </div>
+
+                    @if (!empty($track['cta']))
+                        <div style="display:flex; gap:12px; flex-wrap:wrap; margin-top:16px;">
+                            @foreach ($track['cta'] as $c)
+                                <a href="{{ $c['url'] }}" class="btn {{ !empty($c['primary']) ? 'btn--fill' : 'btn--outline' }}">{{ $c['label'] }} @include('partials.arrow')</a>
+                            @endforeach
                         </div>
                     @endif
 
                     <hr class="divider">
 
-                    {{-- LINIMASA PERJALANAN PESANAN (FIGMA 95:1555 & 105:8769) --}}
-                    <div class="timeline-container">
-                        <h3 class="subheader-title font-20" style="margin-bottom: 20px;">Perjalanan pesanan Anda</h3>
-
-                        <div class="timeline-list">
-                            {{-- Step 1: Pesanan Dibuat --}}
-                            <div class="timeline-item">
-                                <div class="timeline-track">
-                                    <div class="timeline-node is-done">
-                                        <img src="{{ asset('images/check.svg') }}" alt="✓" width="12" height="12">
+                    {{-- LINIMASA PERJALANAN PESANAN (data nyata) --}}
+                    <div class="tracking-timeline-wrap">
+                        <h3 class="subheader-title font-20" style="margin-bottom: 20px;">Perjalanan pesanan</h3>
+                        <div class="timeline-vertical">
+                            @foreach ($track['timeline'] as $step)
+                                <div class="timeline-step">
+                                    <div class="timeline-visual-col">
+                                        <span class="timeline-node is-{{ in_array($step['state'], ['warn', 'cancelled']) ? 'current' : $step['state'] }}" @if($step['state'] === 'warn') style="border-color:#B7791F; color:#B7791F;" @elseif($step['state'] === 'cancelled') style="border-color:#D32F2F; color:#D32F2F;" @endif>
+                                            @if ($step['state'] === 'done') ✓ @elseif ($step['state'] === 'warn') ! @elseif ($step['state'] === 'cancelled') × @endif
+                                        </span>
+                                        @if (!$loop->last)
+                                            <span class="timeline-line {{ $step['state'] === 'done' ? 'is-done' : 'is-upcoming' }}"></span>
+                                        @endif
                                     </div>
-                                    <div class="timeline-line is-done"></div>
-                                </div>
-                                <div class="timeline-content">
-                                    <div class="timeline-content-header">
-                                        <strong class="timeline-step-title">Pesanan dibuat</strong>
-                                        <span class="timeline-badge badge-done">DILALUI</span>
-                                    </div>
-                                    <p class="timeline-step-desc">Paket, rencana jadwal, dan data pemesan telah diterima.</p>
-                                </div>
-                            </div>
-
-                            {{-- Step 2: Menunggu Pembayaran / Bukti Diterima --}}
-                            <div class="timeline-item">
-                                <div class="timeline-track">
-                                    <div class="timeline-node is-done">
-                                        <img src="{{ asset('images/check.svg') }}" alt="✓" width="12" height="12">
-                                    </div>
-                                    <div class="timeline-line is-done"></div>
-                                </div>
-                                <div class="timeline-content">
-                                    <div class="timeline-content-header">
-                                        <strong class="timeline-step-title">{{ $statusKey === 'dikonfirmasi' ? 'Bukti pembayaran diterima' : 'Menunggu pembayaran' }}</strong>
-                                        <span class="timeline-badge badge-done">DILALUI</span>
-                                    </div>
-                                    <p class="timeline-step-desc">
-                                        {{ $statusKey === 'dikonfirmasi' ? '5 Oktober 2026 · Bukti diterima, bukan tanda pembayaran terverifikasi.' : 'Tahap sebelumnya telah dilalui: bukti sudah dikirim, belum diverifikasi.' }}
-                                    </p>
-                                </div>
-                            </div>
-
-                            @if($statusKey === 'dikonfirmasi')
-                                {{-- Step 3: Verifikasi Pembayaran (DONE) --}}
-                                <div class="timeline-item">
-                                    <div class="timeline-track">
-                                        <div class="timeline-node is-done">
-                                            <img src="{{ asset('images/check.svg') }}" alt="✓" width="12" height="12">
-                                        </div>
-                                        <div class="timeline-line is-done"></div>
-                                    </div>
-                                    <div class="timeline-content">
-                                        <div class="timeline-content-header">
-                                            <strong class="timeline-step-title">Verifikasi pembayaran</strong>
-                                            <span class="timeline-badge badge-done">DILALUI</span>
-                                        </div>
-                                        <p class="timeline-step-desc">Pembayaran telah diperiksa dan dinyatakan terverifikasi.</p>
+                                    <div class="timeline-text-col">
+                                        <strong class="timeline-step-title">{{ $step['title'] }}</strong>
+                                        @if ($step['state'] === 'current')<span class="badge-current">SAAT INI</span>@elseif ($step['state'] === 'warn')<span class="badge-current" style="background:#FFF4DD; color:#B7791F;">PERLU TINDAKAN</span>@endif
+                                        <p class="timeline-step-desc">{{ $step['desc'] }}</p>
                                     </div>
                                 </div>
-
-                                {{-- Step 4: Pesanan Dikonfirmasi (CURRENT) --}}
-                                <div class="timeline-item">
-                                    <div class="timeline-track">
-                                        <div class="timeline-node is-current">
-                                            <img src="{{ asset('images/check.svg') }}" alt="✓" width="12" height="12" style="filter: brightness(0) invert(1);">
-                                        </div>
-                                        <div class="timeline-line is-upcoming"></div>
-                                    </div>
-                                    <div class="timeline-content">
-                                        <div class="timeline-content-header">
-                                            <strong class="timeline-step-title is-current">Pesanan dikonfirmasi</strong>
-                                            <span class="timeline-badge badge-current">SAAT INI</span>
-                                        </div>
-                                        <p class="timeline-step-desc">Jadwal {{ $data['session_date'] }} telah disetujui studio.</p>
-                                    </div>
-                                </div>
-                            @else
-                                {{-- Step 3: Bukti Diterima · Sedang Diperiksa (CURRENT) --}}
-                                <div class="timeline-item">
-                                    <div class="timeline-track">
-                                        <div class="timeline-node is-current">
-                                            <span class="timeline-dot"></span>
-                                        </div>
-                                        <div class="timeline-line is-upcoming"></div>
-                                    </div>
-                                    <div class="timeline-content">
-                                        <div class="timeline-content-header">
-                                            <strong class="timeline-step-title is-current">Bukti diterima · sedang diperiksa</strong>
-                                            <span class="timeline-badge badge-current">SAAT INI</span>
-                                        </div>
-                                        <p class="timeline-step-desc">Studio meninjau bukti pembayaran dan ketersediaan jadwal.</p>
-                                    </div>
-                                </div>
-
-                                {{-- Step 4: Pesanan Dikonfirmasi (UPCOMING) --}}
-                                <div class="timeline-item">
-                                    <div class="timeline-track">
-                                        <div class="timeline-node is-upcoming">
-                                            <span class="timeline-dot"></span>
-                                        </div>
-                                        <div class="timeline-line is-upcoming"></div>
-                                    </div>
-                                    <div class="timeline-content">
-                                        <div class="timeline-content-header">
-                                            <strong class="timeline-step-title muted">Pesanan dikonfirmasi</strong>
-                                            <span class="timeline-badge badge-upcoming">BERIKUTNYA</span>
-                                        </div>
-                                        <p class="timeline-step-desc">Belum dikonfirmasi. Tunggu kabar resmi dari studio.</p>
-                                    </div>
-                                </div>
-                            @endif
-
-                            {{-- Step 5: Sesi Selesai --}}
-                            <div class="timeline-item">
-                                <div class="timeline-track">
-                                    <div class="timeline-node is-upcoming">
-                                        <span class="timeline-dot"></span>
-                                    </div>
-                                </div>
-                                <div class="timeline-content">
-                                    <div class="timeline-content-header">
-                                        <strong class="timeline-step-title muted">Sesi selesai</strong>
-                                        <span class="timeline-badge badge-upcoming">BERIKUTNYA</span>
-                                    </div>
-                                    <p class="timeline-step-desc">Setelah pesanan dikonfirmasi dan sesi foto berlangsung.</p>
-                                </div>
-                            </div>
+                            @endforeach
                         </div>
                     </div>
 
-                    @if($statusKey === 'dikonfirmasi')
+                    @if($track['show_prep'])
                         <hr class="divider">
 
-                        {{-- PERSIAPAN SESI (FIGMA 105:8820) --}}
+                        {{-- PERSIAPAN SESI --}}
                         <div style="display: flex; flex-direction: column; gap: 16px;">
-                            <h3 class="subheader-title font-20">Siapkan cerita keluarga Anda</h3>
-
+                            <h3 class="subheader-title font-20">Persiapan sesi Anda</h3>
                             <div class="detail-row">
                                 <div style="display: flex; flex-direction: column; gap: 4px;">
                                     <span class="detail-label">Panggilan perencanaan</span>
-                                    <p class="body-text font-13" style="color:var(--ink);">Tim studio akan menghubungi Anda untuk menyepakati alamat rumah dan taman terdekat.</p>
+                                    <p class="body-text font-13" style="color:var(--ink);">Tim studio akan menghubungi Anda untuk menyepakati lokasi dan kebutuhan sesi.</p>
                                 </div>
                             </div>
-
                             <div class="detail-row">
                                 <div style="display: flex; flex-direction: column; gap: 4px;">
                                     <span class="detail-label">Kostum &amp; kenyamanan</span>
-                                    <p class="body-text font-13" style="color:var(--ink);">Siapkan dua pilihan kostum yang nyaman dan selaras. Bawa keperluan serta camilan untuk anak.</p>
+                                    <p class="body-text font-13" style="color:var(--ink);">Siapkan pilihan busana yang nyaman dan selaras, serta keperluan pribadi yang dibutuhkan selama sesi.</p>
                                 </div>
                             </div>
-
                             <div class="detail-row">
                                 <div style="display: flex; flex-direction: column; gap: 4px;">
                                     <span class="detail-label">Sebelum sesi</span>
-                                    <p class="body-text font-13" style="color:var(--ink);">Sisihkan waktu sebelum pukul 15.30 WIB agar keluarga siap dan sesi terasa santai.</p>
+                                    <p class="body-text font-13" style="color:var(--ink);">Tiba atau bersiap sebelum pukul {{ explode(' ', (string) $data['session_time'])[0] }} WIB agar sesi berjalan santai.</p>
                                 </div>
                             </div>
                         </div>
@@ -297,15 +164,9 @@
                         <h4 class="subheader-title font-13 font-medium">Dokumen pesanan</h4>
                         <div class="tracking-doc-actions">
                             <a href="{{ route('checkout') }}" class="btn btn--outline btn-sm">
-                                {{ $statusKey === 'dikonfirmasi' ? 'Lihat invoice lunas' : 'Lihat invoice' }} @include('partials.arrow')
-                            </a>
-                            <a href="{{ route('konfirmasi', ['status' => 'success']) }}" class="btn btn--outline btn-sm">
-                                Lihat bukti terkirim @include('partials.arrow')
+                                {{ $track['icon'] === 'check' && $statusKey === 'Dikonfirmasi' ? 'Lihat invoice lunas' : 'Lihat invoice' }} @include('partials.arrow')
                             </a>
                         </div>
-                        <span class="form-helper-text" style="font-size: 11px; margin-top: 8px; display: block;">
-                            Tombol bukti adalah ilustrasi tindakan; tidak ada struk atau data transaksi asli yang ditampilkan pada contoh ini.
-                        </span>
                     </div>
                 </div>
 
@@ -393,7 +254,7 @@
                         {{-- Nomor Invoice & Total --}}
                         <div style="display: flex; flex-direction: column; gap: 12px;">
                             <div>
-                                <span class="detail-label">Nomor invoice contoh</span>
+                                <span class="detail-label">Nomor invoice</span>
                                 <strong class="detail-value">{{ $data['invoice_number'] ?? 'INV-CH-2026-001' }}</strong>
                             </div>
 
@@ -401,8 +262,8 @@
                                 <span class="font-13" style="color:#3B5B9A;">Total pada invoice</span>
                                 <span class="font-36 font-semibold" style="color:var(--ink);">{{ $data['package_price'] }}</span>
                                 <span class="font-11 muted">Dalam rupiah (IDR) · sesuai harga paket</span>
-                                @if($statusKey === 'dikonfirmasi')
-                                    <span class="font-12 font-medium" style="color:#3B5B9A; margin-top:4px;">Pembayaran terverifikasi · Jadwal sesi telah disetujui studio</span>
+                                @if(in_array($statusKey, ['Dikonfirmasi', 'Selesai', 'Diarsipkan']) || $payStatus === 'Terverifikasi')
+                                    <span class="font-12 font-medium" style="color:#3B5B9A; margin-top:4px;">Pembayaran terverifikasi{{ $statusKey === 'Dikonfirmasi' ? ' · Jadwal sesi telah disetujui studio' : '' }}</span>
                                 @else
                                     <span class="font-12 font-medium" style="color:#3B5B9A; margin-top:4px;">Pembayaran belum terverifikasi · bukan tanda lunas</span>
                                 @endif

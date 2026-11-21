@@ -92,7 +92,7 @@
                         <div class="admin-meta-field">
                             <label class="admin-meta-label">Metode pembayaran</label>
                             <select class="admin-form-input">
-                                <option selected>Transfer / QRIS · Setelah konfigurasi</option>
+                                <option selected>Transfer bank · Setelah konfigurasi</option>
                                 <option>Tunai di Lokasi</option>
                             </select>
                         </div>
@@ -129,7 +129,7 @@
                     <div class="admin-alert-box alert-warning-box">
                         <strong class="admin-alert-title text-gold">Instruksi resmi belum tersedia</strong>
                         <p class="admin-alert-desc text-gold">
-                            Bank, nomor rekening, nama penerima, dan QRIS harus diisi serta ditinjau studio sebelum ditampilkan kepada pelanggan.
+                            Bank, nomor rekening, dan nama penerima harus diisi serta ditinjau studio sebelum ditampilkan kepada pelanggan.
                         </p>
                     </div>
 
@@ -144,10 +144,6 @@
                         </div>
                     </div>
 
-                    <div class="admin-meta-field">
-                        <label class="admin-meta-label">Berkas QRIS resmi</label>
-                        <input type="text" class="admin-form-input" value="Belum diunggah · Pilih berkas setelah tersedia" readonly>
-                    </div>
                 </div>
 
                 {{-- 3. PRIVASI & KEBIJAKAN (FIGMA 141:4777) --}}

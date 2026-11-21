@@ -39,6 +39,7 @@ class BookingFlowTest extends TestCase
             'email' => 'tester1@example.com',
             'whatsapp' => '+62 812 1111 2222',
             'lokasi' => 'Taman Kota',
+            'persetujuan' => 1,
         ], $over);
     }
 
@@ -111,5 +112,35 @@ class BookingFlowTest extends TestCase
 
         $order->update(['payment_status' => 'Terverifikasi']);
         $this->get('/checkout')->assertSee('Lunas · Terverifikasi');
+    }
+
+    public function test_validasi_form_pemesanan_menolak_data_wajib_yang_kosong_atau_tidak_valid(): void
+    {
+        foreach ([
+            ['nama_lengkap' => '', 'field' => 'nama_lengkap'],
+            ['nama_lengkap' => 'A', 'field' => 'nama_lengkap'],
+            ['nama_lengkap' => '12345', 'field' => 'nama_lengkap'],
+            ['email' => '', 'field' => 'email'],
+            ['email' => 'bukan-email', 'field' => 'email'],
+            ['whatsapp' => '', 'field' => 'whatsapp'],
+            ['whatsapp' => 'abc', 'field' => 'whatsapp'],
+            ['whatsapp' => '12345', 'field' => 'whatsapp'],
+            ['lokasi' => '', 'field' => 'lokasi'],
+            ['lokasi' => '   ', 'field' => 'lokasi'],
+            ['session_date' => '', 'field' => 'session_date'],
+            ['session_time' => '', 'field' => 'session_time'],
+            ['package_id' => '', 'field' => 'package_id'],
+            ['persetujuan' => '', 'field' => 'persetujuan'],
+        ] as $case) {
+            $field = $case['field'];
+            unset($case['field']);
+            $this->post('/pemesanan', $this->payload($case))->assertSessionHasErrors($field);
+        }
+        $this->assertSame(0, Order::where('customer_email', 'tester1@example.com')->count());
+    }
+
+    public function test_data_valid_dengan_variasi_format_diterima(): void
+    {
+        $this->post('/pemesanan', $this->payload(['nama_lengkap' => "Siti Nur'aini-Putri", 'whatsapp' => '+62 812-3456-7890']))->assertRedirect(route('checkout'));
     }
 }

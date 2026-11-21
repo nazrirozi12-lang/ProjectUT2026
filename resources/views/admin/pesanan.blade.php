@@ -107,10 +107,14 @@
                                     {{ $item['payment_status'] }}
                                 </span>
                             </td>
-                            <td style="text-align: right;">
+                            <td style="text-align: right; white-space: nowrap;">
                                 <a href="{{ route('admin.pesanan.detail', ['id' => $item['code']]) }}" class="admin-table-action-link">
                                     Detail →
                                 </a>
+                                @if ($item['deletable'])
+                                    <button type="button" class="admin-table-action-link js-delete-order" style="background:none; border:0; cursor:pointer; color:#D32F2F; margin-left:10px;"
+                                        data-code="{{ $item['code'] }}" data-customer="{{ $item['customer'] }}">Hapus</button>
+                                @endif
                             </td>
                         </tr>
                     @empty
@@ -126,6 +130,41 @@
 
         @include('admin.partials.pagination', ['paginator' => $paginator, 'label' => 'pesanan'])
     </div>
+
+    {{-- MODAL HAPUS PESANAN --}}
+    <div class="admin-modal-overlay" id="modal-delete-order">
+        <div class="admin-modal-dialog">
+            <div class="admin-modal-header">
+                <h3 class="admin-modal-title">Hapus pesanan?</h3>
+                <button type="button" class="admin-btn-close-modal" data-close="modal-delete-order">×</button>
+            </div>
+            <p class="admin-modal-subtitle" id="delete-order-label"></p>
+            <hr class="divider">
+            <div class="admin-alert-box alert-warning-box">
+                <strong class="admin-alert-title text-gold">Tindakan ini permanen</strong>
+                <p class="admin-alert-desc text-gold">Pesanan dan seluruh data pembayarannya akan dihapus. Hanya pesanan dengan sesi selain Dikonfirmasi dan Selesai yang dapat dihapus.</p>
+            </div>
+            <hr class="divider">
+            <form method="POST" id="form-delete-order" class="admin-modal-actions">
+                @csrf
+                @method('DELETE')
+                <button type="button" class="admin-btn-outline" data-close="modal-delete-order">Batal</button>
+                <button type="submit" class="admin-btn-primary" style="background:#D32F2F; border-color:#D32F2F;">Ya, hapus pesanan</button>
+            </form>
+        </div>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const modal = document.getElementById('modal-delete-order');
+            const base = @json(url('/admin/pesanan'));
+            document.querySelectorAll('.js-delete-order').forEach(b => b.addEventListener('click', () => {
+                document.getElementById('form-delete-order').action = base + '/' + encodeURIComponent(b.dataset.code);
+                document.getElementById('delete-order-label').textContent = b.dataset.code + ' · ' + b.dataset.customer;
+                modal.classList.add('is-open');
+            }));
+            document.querySelectorAll('[data-close="modal-delete-order"]').forEach(b => b.addEventListener('click', () => modal.classList.remove('is-open')));
+        });
+    </script>
 
     {{-- FOOTER COPYRIGHT (FIGMA 141:1104) --}}
     <div class="admin-footer-copyright">

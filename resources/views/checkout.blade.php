@@ -27,7 +27,7 @@
                 @elseif ($live['payment_status'] === 'Bukti terkirim')
                     Bukti pembayaran Anda sudah diterima dan sedang diperiksa studio. Sesi Anda belum dikonfirmasi.
                 @else
-                    Periksa kembali detail sesi dan invoice Anda, lalu pilih metode pembayaran. Sesi Anda belum dikonfirmasi.
+                    Periksa kembali detail sesi dan invoice Anda, lalu lanjutkan ke pembayaran transfer bank. Sesi Anda belum dikonfirmasi.
                 @endif
             </p>
         </div>
@@ -264,29 +264,21 @@
                     </div>
                 @endif
             <form action="{{ route('konfirmasi') }}" method="GET" id="paymentMethodForm">
-                {{-- Pilihan Metode Pembayaran --}}
-                <div class="payment-method-section">
-                    <h4 class="payment-title">Pilih metode pembayaran</h4>
+                <input type="hidden" name="kode" value="{{ $data['order_code'] }}">
+                <input type="hidden" name="kontak" value="{{ $data['email'] }}">
 
-                    <label class="payment-method-card is-selected" data-method="transfer">
-                        <input type="radio" name="metode" value="transfer" checked class="sr-only payment-radio">
+                {{-- Metode pembayaran: transfer bank --}}
+                <div class="payment-method-section">
+                    <h4 class="payment-title">Metode pembayaran</h4>
+
+                    <div class="payment-method-card is-selected" data-method="transfer">
                         <div class="method-radio-circle"><div class="method-radio-inner"></div></div>
                         <div class="method-info">
                             <strong class="method-name">Transfer bank</strong>
                             <span class="method-desc">Nomor rekening BCA & Mandiri diberikan pada langkah berikutnya</span>
                         </div>
                         <img src="{{ asset('images/icon-landmark.svg') }}" alt="" class="method-icon">
-                    </label>
-
-                    <label class="payment-method-card" data-method="qris">
-                        <input type="radio" name="metode" value="qris" class="sr-only payment-radio">
-                        <div class="method-radio-circle"><div class="method-radio-inner"></div></div>
-                        <div class="method-info">
-                            <strong class="method-name">QRIS</strong>
-                            <span class="method-desc">Kode QRIS resmi studio ditampilkan pada langkah berikutnya</span>
-                        </div>
-                        <img src="{{ asset('images/icon-qr-code.svg') }}" alt="" class="method-icon">
-                    </label>
+                    </div>
                 </div>
 
                 <button type="submit" class="btn btn--fill btn--block btn--lg" style="margin-top: 20px;">
